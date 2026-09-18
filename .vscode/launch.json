@@ -1,0 +1,200 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Backend: FastAPI (uvicorn --reload)",
+			"type": "debugpy",
+			"request": "launch",
+			"module": "uvicorn",
+			"args": [
+				"main:app",
+				"--reload",
+				"--host",
+				"0.0.0.0",
+				"--port",
+				"8000"
+			],
+			"cwd": "${workspaceFolder}/backend",
+			"envFile": "${workspaceFolder}/backend/.env",
+			"env": {
+				"PYTHONPATH": "${workspaceFolder}/backend"
+			},
+			"console": "integratedTerminal",
+			"justMyCode": true
+		},
+		{
+			"name": "Backend: FastAPI (debug, no reload)",
+			"type": "debugpy",
+			"request": "launch",
+			"module": "uvicorn",
+			"args": [
+				"main:app",
+				"--host",
+				"0.0.0.0",
+				"--port",
+				"8000"
+			],
+			"cwd": "${workspaceFolder}/backend",
+			"envFile": "${workspaceFolder}/backend/.env",
+			"env": {
+				"PYTHONPATH": "${workspaceFolder}/backend"
+			},
+			"console": "integratedTerminal",
+			"justMyCode": true
+		},
+		{
+			"name": "Backend: Current File",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${file}",
+			"cwd": "${workspaceFolder}/backend",
+			"envFile": "${workspaceFolder}/backend/.env",
+			"env": {
+				"PYTHONPATH": "${workspaceFolder}/backend"
+			},
+			"console": "integratedTerminal",
+			"justMyCode": true
+		},
+		{
+			"name": "Backend: pytest (all tests)",
+			"type": "debugpy",
+			"request": "launch",
+			"module": "pytest",
+			"args": [
+				"tests",
+				"-q"
+			],
+			"cwd": "${workspaceFolder}/backend",
+			"envFile": "${workspaceFolder}/backend/.env",
+			"env": {
+				"PYTHONPATH": "${workspaceFolder}/backend"
+			},
+			"console": "integratedTerminal",
+			"justMyCode": false
+		},
+		{
+			"name": "Backend: pytest (current file)",
+			"type": "debugpy",
+			"request": "launch",
+			"module": "pytest",
+			"args": [
+				"${relativeFile}",
+				"-q"
+			],
+			"cwd": "${workspaceFolder}/backend",
+			"envFile": "${workspaceFolder}/backend/.env",
+			"env": {
+				"PYTHONPATH": "${workspaceFolder}/backend"
+			},
+			"console": "integratedTerminal",
+			"justMyCode": false
+		},
+		{
+			"name": "Backend: Smoke Test (scripts/smoke_test.py)",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/backend/scripts/smoke_test.py",
+			"cwd": "${workspaceFolder}/backend",
+			"envFile": "${workspaceFolder}/backend/.env",
+			"env": {
+				"PYTHONPATH": "${workspaceFolder}/backend"
+			},
+			"console": "integratedTerminal",
+			"justMyCode": true
+		},
+		{
+			"name": "Frontend: Vite Dev Server",
+			"type": "node",
+			"request": "launch",
+			"runtimeExecutable": "npm",
+			"runtimeArgs": [
+				"run",
+				"dev"
+			],
+			"cwd": "${workspaceFolder}/frontend",
+			"console": "integratedTerminal",
+			"skipFiles": [
+				"<node_internals>/**"
+			],
+			"serverReadyAction": {
+				"pattern": "Local:\\s+(https?://\\S+)",
+				"uriFormat": "%s",
+				"action": "openExternally"
+			}
+		},
+		{
+			"name": "Frontend: Vite Preview",
+			"type": "node",
+			"request": "launch",
+			"runtimeExecutable": "npm",
+			"runtimeArgs": [
+				"run",
+				"preview"
+			],
+			"cwd": "${workspaceFolder}/frontend",
+			"console": "integratedTerminal",
+			"skipFiles": [
+				"<node_internals>/**"
+			]
+		},
+		{
+			"name": "Frontend: Chrome against Vite",
+			"type": "chrome",
+			"request": "launch",
+			"url": "http://localhost:5173",
+			"webRoot": "${workspaceFolder}/frontend/src",
+			"sourceMaps": true,
+			"sourceMapPathOverrides": {
+				"/@fs/*": "*"
+			}
+		},
+		{
+			"name": "Frontend: Edge against Vite",
+			"type": "msedge",
+			"request": "launch",
+			"url": "http://localhost:5173",
+			"webRoot": "${workspaceFolder}/frontend/src",
+			"sourceMaps": true
+		},
+		{
+			"name": "Frontend: Typecheck (tsc --noEmit)",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "npm run typecheck",
+			"cwd": "${workspaceFolder}/frontend"
+		},
+		{
+			"name": "Docker: compose up --build",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "docker compose up --build",
+			"cwd": "${workspaceFolder}"
+		},
+		{
+			"name": "Docker: compose down",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "docker compose down",
+			"cwd": "${workspaceFolder}"
+		}
+	],
+	"compounds": [
+		{
+			"name": "Full Stack: Backend + Frontend + Chrome",
+			"configurations": [
+				"Backend: FastAPI (debug, no reload)",
+				"Frontend: Vite Dev Server",
+				"Frontend: Chrome against Vite"
+			],
+			"stopAll": true
+		},
+		{
+			"name": "Full Stack: Backend + Frontend",
+			"configurations": [
+				"Backend: FastAPI (debug, no reload)",
+				"Frontend: Vite Dev Server"
+			],
+			"stopAll": true
+		}
+	]
+}
