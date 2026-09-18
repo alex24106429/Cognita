@@ -85,22 +85,24 @@ class TransformRequest(BaseModel):
 def response_json_schema_string() -> str:
     """Return a compact, human/LLM readable rendering of the target contract.
 
-    The LLM is instructed to emit JSON matching this schema. We render the
-    schema explicitly inside the prompt because not every OpenAI-compatible
-    provider supports strict structured-output enforcement.
+    This example is embedded in the user prompt because JSON-mode providers
+    require the desired json shape to be demonstrated in the prompt itself
+    (see the provider's "JSON Output" guide). The example deliberately shows
+    both quiz shapes - a populated quiz and the required "quiz": null - so the
+    model does not invent a quiz for every block.
     """
     return """{
   "document_title": "string",
-  "overall_read_time_minutes": 0,
-  "difficulty_score": 0,
+  "overall_read_time_minutes": 6,
+  "difficulty_score": 7,
   "executive_summary": "string (exactly 3 sentences)",
   "blocks": [
     {
       "block_id": 1,
-      "headline": "string",
-      "estimated_reading_seconds": 0,
-      "bionic_chunks": ["string", "string"],
-      "key_takeaway": "string",
+      "headline": "string (4-8 words)",
+      "estimated_reading_seconds": 45,
+      "bionic_chunks": ["string (max 18 words)", "string (max 18 words)"],
+      "key_takeaway": "string (one bullet)",
       "source_citation_anchor": "verbatim substring copied from the user's source text",
       "quiz": {
         "question": "string",
@@ -111,6 +113,15 @@ def response_json_schema_string() -> str:
         ],
         "explanation": "string"
       }
+    },
+    {
+      "block_id": 2,
+      "headline": "string (4-8 words)",
+      "estimated_reading_seconds": 40,
+      "bionic_chunks": ["string (max 18 words)"],
+      "key_takeaway": "string (one bullet)",
+      "source_citation_anchor": "verbatim substring copied from the user's source text",
+      "quiz": null
     }
   ],
   "nuance_caveats": ["string"]

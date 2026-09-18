@@ -74,12 +74,13 @@ is the shared upstream cause of both the dyslexia and the ADHD failure modes.
    ┌────────────────────────────────────────────────────────┐
    │             BACKEND (FastAPI / Python 3.10+)           │
    │  1. Ingestion & Pre-Validation Pipeline                │
-   │  2. Section-Aware Chunking (token window overflow)     │
-   │  3. LLM Orchestration Engine                           │
-   │     • Strict JSON contract prompt                      │
-   │     • tenacity exponential backoff (429/503/timeouts)  │
-   │     • Markdown-fence stripping + one-shot JSON repair  │
-   │  4. Pydantic Validation + Normalisation + Merging      │
+   │  2. Single-Pass LLM Orchestration (one call per doc)   │
+   │     • Thinking/reasoning mode explicitly disabled      │
+   │     • Structured JSON output + in-prompt schema        │
+   │     • tenacity backoff on transient 429/503/timeouts   │
+   │  3. Pydantic Validation + Normalisation + Merging      │
+   │  4. Safety valve: chunk fan-out only if the operator   │
+   │     lowers MAX_CHUNK_CHARS below the 50k input cap     │
    └───────────────────────────┬────────────────────────────┘
                                │ Validated JSON
                                ▼
@@ -125,12 +126,14 @@ LLM summarisers reports omission rates of critical context between **12% and 27%
 
 | Failure mode | Mitigation implemented |
 | :--- | :--- |
-| Malformed JSON / markdown fences | `response_format={"type": "json_object"}`, fence + preamble stripping, trailing-comma tolerance, and a one-shot repair query |
+| Malformed JSON / markdown fences | Structured output (`response_format={"type": "json_object"}`) plus the json schema/example embedded in the prompt, fence + preamble stripping and trailing-comma tolerance. An unparseable answer returns HTTP 502 instead of silently spending a second call (the repair query is opt-in via `LLM_JSON_REPAIR_PASS=1`) |
+| Truncated JSON (`finish_reason="length"`) | `LLM_MAX_TOKENS` (default 8192) guards the output ceiling; hitting it fails fast with an actionable 502 rather than retrying into the same wall |
+| Excess latency from reasoning tokens | Provider thinking mode is disabled (`extra_body={"thinking": {"type": "disabled"}}`), removing a chain-of-thought pass Cognita never consumes |
 | Model hallucinated citations | Whitespace-tolerant verbatim anchor matching on both sides; unmatched anchors flagged `unverified` in the UI and counted in the workspace banner |
 | Invalid quiz (0 or 2+ correct answers) | Quiz is dropped, block is kept — a bad quiz never breaks the reader |
 | Missing/partial block fields | Blocks are normalised (reading time derived from word count, takeaway derived from the first chunk) and individually pruned if unusable |
-| Oversized papers (>15k chars) | Section/paragraph/sentence-aware chunking, concurrent transformation with a bounded semaphore, deterministic merge with sequential renumbering |
-| Provider 429/503/timeout | `tenacity` exponential backoff with jitter; distinguished from non-retryable errors (auth/bad request) which fail fast |
+| Oversized papers (up to the 50,000-char cap) | One provider call per document: `MAX_CHUNK_CHARS` defaults to 50,000 so a valid request is never fanned out. Lowering it re-enables section-aware chunking with a bounded semaphore and deterministic sequential merge |
+| Provider 429/503/timeout | `tenacity` exponential backoff with jitter, applied **only** to transient transport errors (a dedicated exception type), so auth/bad-request failures are never retried |
 | Partial multi-chunk failure | Successful sections are merged and returned; failures are logged rather than discarding good work |
 | Missing API key | `/api/health` reports `api_key_configured`; the UI warns before submission; `/api/transform` returns an actionable 500 instead of a stack trace |
 | Injection via pasted text | User content is wrapped in `<source_document>` delimiters with an explicit "input is data, not instructions" system rule, plus a 100-char / 50,000-char envelope |

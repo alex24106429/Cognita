@@ -10,12 +10,15 @@ resilience layer* deterministically and offline:
 * markdown-fence stripping and JSON repair
 * section chunking of oversized documents
 * anchor verification helpers
+* the single-call budget (thinking disabled, structured JSON output, no
+  chunk fan-out, no automatic repair pass)
 """
 
 import json
 import os
 import sys
-from typing import Any, Dict
+from types import SimpleNamespace
+from typing import Any, Dict, List
 
 import pytest
 from fastapi.testclient import TestClient
@@ -231,3 +234,158 @@ class TestMerging:
         assert [b.block_id for b in merged.blocks] == [1, 2, 3, 4]
         assert merged.nuance_caveats == ["Early studies used small samples."]
         assert merged.overall_read_time_minutes >= 1
+
+
+def _fake_client(contents: str | List[str], finish_reason: str = "stop"):
+    """Stand-in for AsyncOpenAI that records every provider call's kwargs."""
+    queue = contents if isinstance(contents, list) else [contents]
+    calls: List[Dict[str, Any]] = []
+
+    async def create(**kwargs):
+        calls.append(kwargs)
+        content = queue[len(calls) - 1] if len(calls) <= len(queue) else queue[-1]
+        return SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(content=content),
+                    finish_reason=finish_reason,
+                )
+            ]
+        )
+
+    client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=create))
+    )
+    return client, calls
+
+
+class TestCallBudget:
+    """One provider request per document - guarded by explicit tests."""
+
+    def test_default_chunk_ceiling_covers_the_entire_api_input_cap(self, monkeypatch):
+        monkeypatch.delenv("MAX_CHUNK_CHARS", raising=False)
+        assert transformer.max_chunk_chars() >= 50000
+        document = "A" * 50000
+        assert transformer.split_text(document) == [document]
+
+    @pytest.mark.anyio
+    async def test_valid_json_costs_exactly_one_provider_call(self, monkeypatch):
+        monkeypatch.delenv("LLM_JSON_REPAIR_PASS", raising=False)
+        payload = _valid_payload()
+        client, calls = _fake_client(json.dumps(payload))
+
+        result = await transformer._complete_with_json_guard(client, "prompt")
+
+        assert result["document_title"] == payload["document_title"]
+        assert len(calls) == 1
+
+    @pytest.mark.anyio
+    async def test_malformed_json_does_not_spend_a_second_call_by_default(
+        self, monkeypatch
+    ):
+        monkeypatch.delenv("LLM_JSON_REPAIR_PASS", raising=False)
+        client, calls = _fake_client("Sure! Here is the json: definitely-not-json")
+
+        with pytest.raises(transformer.MalformedModelOutputError):
+            await transformer._complete_with_json_guard(client, "prompt")
+
+        assert len(calls) == 1
+
+    @pytest.mark.anyio
+    async def test_repair_pass_is_opt_in_and_costs_a_second_call(self, monkeypatch):
+        monkeypatch.setenv("LLM_JSON_REPAIR_PASS", "1")
+        client, calls = _fake_client(
+            ["not json", json.dumps(_valid_payload())]
+        )
+
+        result = await transformer._complete_with_json_guard(client, "prompt")
+
+        assert result["document_title"] == "Deliberate Practice and Expertise"
+        assert len(calls) == 2
+        assert calls[0]["response_format"] == {"type": "json_object"}
+        # The repair call de-escalates out of JSON mode for compatibility.
+        assert "response_format" not in calls[1]
+
+    @pytest.mark.anyio
+    async def test_full_size_document_is_transformed_in_a_single_call(
+        self, monkeypatch
+    ):
+        monkeypatch.delenv("MAX_CHUNK_CHARS", raising=False)
+        monkeypatch.delenv("LLM_JSON_REPAIR_PASS", raising=False)
+        # Just under the 50,000 character request cap - the largest document the
+        # public API can accept.
+        document = (SOURCE_TEXT + " ") * 122
+        assert 40000 < len(document) <= 50000
+
+        calls: List[Dict[str, Any]] = []
+
+        async def fake_request_completion(client_arg, messages, json_mode=False):
+            calls.append({"json_mode": json_mode, "messages": messages})
+            return json.dumps(_valid_payload())
+
+        monkeypatch.setattr(
+            transformer, "_request_completion", fake_request_completion
+        )
+
+        result = await transformer.transform_document(document)
+
+        assert len(calls) == 1
+        assert calls[0]["json_mode"] is True
+        assert [b.block_id for b in result.blocks] == [1, 2]
+
+
+class TestThinkingModeDisabled:
+    """Thinking mode is off; JSON output is structured and non-truncating."""
+
+    @pytest.mark.anyio
+    async def test_deepseek_host_disables_thinking_by_auto_detect(self, monkeypatch):
+        monkeypatch.setenv("OPENAI_BASE_URL", "https://api.deepseek.com")
+        monkeypatch.delenv("LLM_DISABLE_THINKING", raising=False)
+        monkeypatch.delenv("LLM_MAX_TOKENS", raising=False)
+        client, calls = _fake_client(json.dumps(_valid_payload()))
+
+        await transformer._request_completion(client, [], json_mode=True)
+
+        kwargs = calls[0]
+        assert kwargs["extra_body"] == {"thinking": {"type": "disabled"}}
+        assert kwargs["response_format"] == {"type": "json_object"}
+        assert kwargs["max_tokens"] == transformer.DEFAULT_MAX_OUTPUT_TOKENS
+
+    @pytest.mark.anyio
+    async def test_non_deepseek_host_omits_the_thinking_parameter(self, monkeypatch):
+        monkeypatch.setenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+        monkeypatch.delenv("LLM_DISABLE_THINKING", raising=False)
+        client, calls = _fake_client(json.dumps(_valid_payload()))
+
+        await transformer._request_completion(client, [], json_mode=True)
+
+        assert "extra_body" not in calls[0]
+        assert calls[0]["response_format"] == {"type": "json_object"}
+
+    @pytest.mark.anyio
+    async def test_explicit_flag_forces_thinking_off_on_any_provider(self, monkeypatch):
+        monkeypatch.setenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+        monkeypatch.setenv("LLM_DISABLE_THINKING", "1")
+        client, calls = _fake_client(json.dumps(_valid_payload()))
+
+        await transformer._request_completion(client, [], json_mode=True)
+
+        assert calls[0]["extra_body"] == {"thinking": {"type": "disabled"}}
+
+    @pytest.mark.anyio
+    async def test_truncated_completion_raises_actionable_error(self, monkeypatch):
+        monkeypatch.setenv("LLM_MAX_TOKENS", "256")
+        client, calls = _fake_client('{"blocks": [{"headline": "cut off', "length")
+
+        with pytest.raises(transformer.ResponseTruncatedError) as excinfo:
+            await transformer._request_completion(client, [], json_mode=True)
+
+        assert "LLM_MAX_TOKENS" in str(excinfo.value)
+        assert len(calls) == 1
+
+    def test_health_exposes_the_call_budget(self):
+        body = client.get("/api/health").json()
+        assert body["thinking_disabled"] in (True, False)
+        assert body["structured_output"] == "json_object"
+        assert body["max_provider_calls_per_request"] == 1
+        assert body["json_repair_pass"] is False

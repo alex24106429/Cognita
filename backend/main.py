@@ -23,8 +23,9 @@ from schemas import TransformRequest, TransformationResponse
 from transformer import (
     MalformedModelOutputError,
     ProviderUnavailableError,
-    is_api_key_configured,
     get_model_name,
+    get_transformation_settings,
+    is_api_key_configured,
     transform_document,
 )
 
@@ -111,9 +112,11 @@ async def health_check() -> dict:
     return {
         "status": "healthy",
         "model": get_model_name(),
-        "base_url": os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
         "api_key_configured": is_api_key_configured(),
         "cors_origins": origins,
+        # Full call-budget introspection: thinking mode, structured JSON output,
+        # chunk ceiling and repair-pass state.
+        **get_transformation_settings(),
     }
 
 
