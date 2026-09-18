@@ -63,7 +63,9 @@ def post_json(url: str, payload: dict) -> tuple[int, dict]:
         method="POST",
     )
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
+        # A live provider round trip can legitimately take tens of seconds
+        # (chunking + retries), so this must be generous to avoid false failures.
+        with urllib.request.urlopen(request, timeout=120) as response:
             return response.status, json.loads(response.read().decode())
     except urllib.error.HTTPError as exc:
         body = exc.read().decode()
@@ -142,13 +144,23 @@ def main() -> int:
                 )
             },
         )
-        # Without a real API key the backend must degrade gracefully with an
-        # actionable message rather than a stack trace.
-        record(
-            "placeholder key produces actionable error",
-            status in (500, 503),
-            f"status={status} detail={payload.get('detail')}",
-        )
+        # The expectation depends on how the server was configured, so branch on
+        # what /api/health reported instead of assuming no key is present.
+        if health.get("api_key_configured"):
+            record(
+                "configured key reaches the provider without a config error",
+                status in (200, 502, 503),
+                f"status={status} detail={str(payload.get('detail'))[:90]}",
+            )
+        else:
+            # Without a real API key the backend must degrade gracefully with an
+            # actionable message rather than a stack trace.
+            record(
+                "placeholder key produces actionable error",
+                status in (500, 503)
+                and "OPENAI_API_KEY" in str(payload.get("detail", "")),
+                f"status={status} detail={payload.get('detail')}",
+            )
 
         request = urllib.request.Request(
             f"{base_url}/api/transform",

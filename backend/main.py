@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request, status
@@ -27,7 +28,14 @@ from transformer import (
     transform_document,
 )
 
-load_dotenv()
+# Resolve backend/.env relative to this file, not the process working directory.
+# Launching from the repository root (e.g. `python backend/main.py`) would
+# otherwise silently miss the key and every request would fail with a 500.
+BACKEND_DIR = Path(__file__).resolve().parent
+
+# `load_dotenv` never overrides variables that are already exported, so an
+# operator-provided environment always wins over the file.
+load_dotenv(BACKEND_DIR / ".env")
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO").upper(),
