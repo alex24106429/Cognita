@@ -3,7 +3,8 @@ from PyQt6.QtCore import pyqtSignal, QSettings, Qt
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QWidget, QGroupBox, QGridLayout, QHBoxLayout, QLabel,
-    QPushButton, QCheckBox, QSpinBox, QDoubleSpinBox, QComboBox
+    QPushButton, QCheckBox, QSpinBox, QDoubleSpinBox, QComboBox,
+    QLineEdit
 )
 
 try:
@@ -75,15 +76,43 @@ class ConfigPanel(QGroupBox):
         self.settle_spin.setValue(1.0)
         layout.addWidget(self.settle_spin, 1, 5)
 
-        # Row 2: Runtime options
-        layout.addWidget(QLabel("Reasoning effort:"), 2, 0)
+        # Row 2: Target Selection (Local vs Remote Device)
+        layout.addWidget(QLabel("Target:"), 2, 0)
+        self.target_mode_combo = QComboBox()
+        self.target_mode_combo.addItems(
+            ["Local Machine", "Remote Target Device"])
+        self.target_mode_combo.currentIndexChanged.connect(
+            self._on_target_mode_changed)
+        layout.addWidget(self.target_mode_combo, 2, 1)
+
+        remote_container = QWidget()
+        remote_row = QHBoxLayout(remote_container)
+        remote_row.setContentsMargins(0, 0, 0, 0)
+        remote_row.setSpacing(8)
+
+        self.remote_host_edit = QLineEdit()
+        self.remote_host_edit.setPlaceholderText(
+            "IP:Port (e.g. 192.168.1.50:8765)")
+        self.remote_token_edit = QLineEdit()
+        self.remote_token_edit.setPlaceholderText("Auth Token (optional)")
+        self.remote_token_edit.setEchoMode(QLineEdit.EchoMode.Password)
+
+        remote_row.addWidget(QLabel("Host:"))
+        remote_row.addWidget(self.remote_host_edit, 2)
+        remote_row.addWidget(QLabel("Token:"))
+        remote_row.addWidget(self.remote_token_edit, 1)
+
+        layout.addWidget(remote_container, 2, 2, 1, 4)
+
+        # Row 3: Runtime options
+        layout.addWidget(QLabel("Reasoning effort:"), 3, 0)
         self.reasoning_combo = QComboBox()
         self.reasoning_combo.addItems(REASONING_EFFORTS)
         self.reasoning_combo.setToolTip(
             "Control reasoning / thinking token allocation (default, none, minimal, low, medium, high, xhigh, max)"
         )
         self.reasoning_combo.currentTextChanged.connect(self.save_settings)
-        layout.addWidget(self.reasoning_combo, 2, 1)
+        layout.addWidget(self.reasoning_combo, 3, 1)
 
         opts = QHBoxLayout()
         self.hide_cb = QCheckBox("Minimise this window while the agent works")
@@ -93,7 +122,18 @@ class ConfigPanel(QGroupBox):
         opts.addWidget(self.hide_cb)
         opts.addWidget(self.autoscroll_cb)
         opts.addStretch()
-        layout.addLayout(opts, 2, 2, 1, 4)
+        layout.addLayout(opts, 3, 2, 1, 4)
+
+        # Initialize visibility/state of remote fields
+        self._on_target_mode_changed(self.target_mode_combo.currentIndex())
+
+    def _on_target_mode_changed(self, index: int):
+        is_remote = (index == 1)
+        self.remote_host_edit.setEnabled(is_remote)
+        self.remote_token_edit.setEnabled(is_remote)
+        if is_remote:
+            # When targeting a remote machine, uncheck minimize so user can monitor logs/preview
+            self.hide_cb.setChecked(False)
 
     def load_settings(self):
         s = self.settings
@@ -101,6 +141,12 @@ class ConfigPanel(QGroupBox):
         self.pause_spin.setValue(float(s.value("pause", 0.5)))
         self.settle_spin.setValue(float(s.value("settle", 1.0)))
         self.hide_cb.setChecked(s.value("hide", True, type=bool))
+
+        target_mode = int(s.value("target_mode", 0))
+        self.target_mode_combo.setCurrentIndex(target_mode)
+        self.remote_host_edit.setText(
+            s.value("remote_host", "192.168.1.50:8765"))
+        self.remote_token_edit.setText(s.value("remote_token", ""))
 
         effort = s.value("reasoning_effort", DEFAULT_REASONING_EFFORT)
         idx = self.reasoning_combo.findText(effort)
@@ -142,8 +188,12 @@ class ConfigPanel(QGroupBox):
         s.setValue("settle", self.settle_spin.value())
         s.setValue("hide", self.hide_cb.isChecked())
         s.setValue("reasoning_effort", self.reasoning_combo.currentText())
+        s.setValue("target_mode", self.target_mode_combo.currentIndex())
+        s.setValue("remote_host", self.remote_host_edit.text().strip())
+        s.setValue("remote_token", self.remote_token_edit.text().strip())
 
     def set_running(self, running: bool):
         for w in (self.cfg_btn, self.steps_spin, self.pause_spin,
-                  self.settle_spin, self.reasoning_combo, self.hide_cb):
+                  self.settle_spin, self.reasoning_combo, self.hide_cb,
+                  self.target_mode_combo, self.remote_host_edit, self.remote_token_edit):
             w.setEnabled(not running)

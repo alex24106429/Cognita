@@ -11,6 +11,7 @@ from log_panel import LogPanel
 from preview_panel import PreviewPanel
 from api_setup_dialog import ApiSetupDialog, is_api_configured
 from worker import AgentWorker
+from device_bridge import LocalDeviceBridge, RemoteDeviceBridge
 
 
 class MainWindow(QMainWindow):
@@ -112,8 +113,15 @@ class MainWindow(QMainWindow):
                                 "Please enter a task for the agent to perform.")
             return
 
+        is_remote = (self.cfg_panel.target_mode_combo.currentIndex() == 1)
+        warning_msg = (
+            "Agent will take control of mouse/keyboard on the REMOTE device. Continue?"
+            if is_remote else
+            "Agent will take control of mouse/keyboard. Continue?"
+        )
+
         res = QMessageBox.question(
-            self, "Takeover Warning", "Agent will take control of mouse/keyboard. Continue?",
+            self, "Takeover Warning", warning_msg,
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         if res != QMessageBox.StandardButton.Yes:
@@ -130,6 +138,21 @@ class MainWindow(QMainWindow):
         provider = s.value("provider", "")
         reasoning_effort = self.cfg_panel.reasoning_combo.currentText()
 
+        # Construct appropriate Device Bridge
+        if is_remote:
+            host_port = self.cfg_panel.remote_host_edit.text().strip()
+            token = self.cfg_panel.remote_token_edit.text().strip()
+            if ":" in host_port:
+                host, port_str = host_port.split(":", 1)
+                port = int(port_str)
+            else:
+                host, port = host_port, 8765
+            device_bridge = RemoteDeviceBridge(
+                host=host, port=port, token=token)
+        else:
+            device_bridge = LocalDeviceBridge(
+                action_pause=self.cfg_panel.pause_spin.value())
+
         self.worker = AgentWorker(
             api_key=api_key,
             model=model,
@@ -140,6 +163,7 @@ class MainWindow(QMainWindow):
             base_url=base_url,
             provider=provider,
             reasoning_effort=reasoning_effort,
+            device_bridge=device_bridge,
         )
         self.thread = QThread(self)
         self.worker.moveToThread(self.thread)

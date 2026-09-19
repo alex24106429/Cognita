@@ -9,7 +9,7 @@ from openai import OpenAI
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
 from config import SYSTEM_PROMPT, TOOLS, BASE_URL, build_system_prompt, load_vault
-from actions import capture_screen, execute_tool
+from device_bridge import DeviceBridge, LocalDeviceBridge
 
 
 class AgentWorker(QObject):
@@ -24,7 +24,8 @@ class AgentWorker(QObject):
     def __init__(self, api_key: str, model: str, goal: str, max_steps: int,
                  action_pause: float, settle_pause: float,
                  base_url: str = None, provider: str = None,
-                 reasoning_effort: str = "default", parent=None):
+                 reasoning_effort: str = "default",
+                 device_bridge: DeviceBridge = None, parent=None):
         super().__init__(parent)
         self.api_key = api_key
         self.model = model
@@ -37,7 +38,14 @@ class AgentWorker(QObject):
         self.settle_pause = settle_pause
         self._abort = False
         self.system_prompt = SYSTEM_PROMPT
-        self.screen_w, self.screen_h = pyautogui.size()
+
+        # Inject device bridge (Local or Remote)
+        self.device = device_bridge or LocalDeviceBridge(
+            action_pause=action_pause)
+        try:
+            self.screen_w, self.screen_h = self.device.get_screen_size()
+        except Exception:
+            self.screen_w, self.screen_h = 1920, 1080
 
     @pyqtSlot()
     def stop(self):
@@ -110,8 +118,6 @@ class AgentWorker(QObject):
     @pyqtSlot()
     def run(self):
         try:
-            pyautogui.PAUSE = self.action_pause
-
             # Dynamically reload vault data if present
             vault_data = load_vault()
             if vault_data:
@@ -150,7 +156,13 @@ class AgentWorker(QObject):
                 self.log.emit("step", f"--- Step {step}/{self.max_steps} ---")
 
                 self.status.emit("Capturing screen…")
-                jpeg = capture_screen()
+                try:
+                    jpeg = self.device.capture_screen()
+                except Exception as e:
+                    self.log.emit("error", f"Screen capture failed: {e}")
+                    summary, self._abort = f"Screen capture failed: {e}", True
+                    break
+
                 self.screenshot.emit(jpeg)
                 img_b64 = base64.b64encode(jpeg).decode("utf-8")
 
@@ -201,8 +213,8 @@ class AgentWorker(QObject):
                         self.action.emit(fn_name, json.dumps(
                             fn_args, ensure_ascii=False))
                         try:
-                            result = execute_tool(
-                                fn_name, fn_args, self.screen_w, self.screen_h, self._sleep)
+                            result = self.device.execute_tool(
+                                fn_name, fn_args, self._sleep)
                         except pyautogui.FailSafeException:
                             self.log.emit(
                                 "error", "PyAutoGUI fail-safe triggered (mouse in corner).")
@@ -306,8 +318,8 @@ class AgentWorker(QObject):
                             fn_args, ensure_ascii=False))
 
                         try:
-                            result = execute_tool(
-                                fn_name, fn_args, self.screen_w, self.screen_h, self._sleep)
+                            result = self.device.execute_tool(
+                                fn_name, fn_args, self._sleep)
                         except pyautogui.FailSafeException:
                             self.log.emit(
                                 "error", "PyAutoGUI fail-safe triggered (mouse in corner).")
@@ -331,7 +343,7 @@ class AgentWorker(QObject):
                 self._sleep(self.settle_pause)
 
             try:
-                self.screenshot.emit(capture_screen())
+                self.screenshot.emit(self.device.capture_screen())
             except Exception:
                 pass
             self.finished.emit(success, summary)

@@ -4,3 +4,4 @@ pillow
 openai
 pyqt6
 pywhispercpp
+requests
