@@ -1,4 +1,5 @@
 import io
+import sys
 import pyautogui
 
 
@@ -26,6 +27,40 @@ def execute_tool(name: str, args: dict, screen_w: int, screen_h: int,
         else:
             pyautogui.click()
         return f"Clicked at screen ({x}, {y}) [normalized {args['x']}, {args['y']}]."
+
+    if name in ("mouse_scroll", "scroll"):
+        loc_str = ""
+        # Move cursor first if target coordinates are provided
+        if "x" in args and "y" in args and args["x"] is not None and args["y"] is not None:
+            x, y = to_screen_coords(args["x"], args["y"], screen_w, screen_h)
+            pyautogui.moveTo(x, y, duration=0.2)
+            loc_str = f" at screen ({x}, {y}) [normalized {args['x']}, {args['y']}]"
+
+        direction = str(args.get("direction", "down")).lower()
+        amount = args.get("amount") if args.get(
+            "amount") is not None else args.get("clicks", 5)
+        try:
+            amount = int(amount)
+        except (ValueError, TypeError):
+            amount = 5
+
+        # In PyAutoGUI, positive is up, negative is down
+        if direction == "up":
+            clicks = abs(amount)
+        elif direction == "down":
+            clicks = -abs(amount)
+        else:
+            clicks = amount
+
+        # Windows WHEEL_DELTA compensation: 1 notch = 120 units in win32 mouse_event.
+        # Small click counts (< 50) are scaled so the OS registers visible movement.
+        scroll_units = clicks
+        if sys.platform == "win32" and abs(clicks) < 50:
+            scroll_units = clicks * 120
+
+        pyautogui.scroll(scroll_units)
+        dir_label = "up" if clicks > 0 else "down"
+        return f"Scrolled {dir_label} by {abs(clicks)} steps{loc_str}."
 
     if name == "type_text":
         text = args["text"]

@@ -172,6 +172,36 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "mouse_scroll",
+            "description": "Scroll the mouse wheel up or down. Optionally moves cursor to a specific coordinate first.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "direction": {
+                        "type": "string",
+                        "enum": ["up", "down"],
+                        "description": "Direction to scroll: 'down' (to scroll down/see lower content) or 'up' (to scroll up/see higher content).",
+                    },
+                    "amount": {
+                        "type": "integer",
+                        "description": "Number of scroll clicks/steps (e.g. 5 for typical scrolling). Default is 5.",
+                    },
+                    "x": {
+                        "type": "integer",
+                        "description": "Optional X coordinate in normalized [0-1000] space to position cursor before scrolling.",
+                    },
+                    "y": {
+                        "type": "integer",
+                        "description": "Optional Y coordinate in normalized [0-1000] space to position cursor before scrolling.",
+                    },
+                },
+                "required": ["direction"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "type_text",
             "description": "Type text into the currently focused input field.",
             "parameters": {
