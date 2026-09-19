@@ -1,6 +1,33 @@
+import json
 from pathlib import Path
 
-ICONS_DIR = Path(__file__).resolve().parent.parent / "icons"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+ICONS_DIR = PROJECT_ROOT / "icons"
+DATA_DIR = PROJECT_ROOT / "data"
+VAULT_PATH = DATA_DIR / "vault.json"
+
+
+def load_vault() -> dict | None:
+    candidate_paths = [
+        VAULT_PATH,
+        PROJECT_ROOT / "vault.json",
+        Path.cwd() / "data" / "vault.json",
+        Path.cwd() / "vault.json",
+    ]
+    seen = set()
+    for p in candidate_paths:
+        try:
+            resolved = p.resolve()
+            if resolved in seen:
+                continue
+            seen.add(resolved)
+            if resolved.is_file():
+                with open(resolved, "r", encoding="utf-8") as f:
+                    return json.load(f)
+        except Exception:
+            continue
+    return None
+
 
 PROVIDERS = {
     "OpenRouter": {
@@ -83,7 +110,7 @@ DEFAULT_PROVIDER = "OpenRouter"
 DEFAULT_MODEL = PROVIDERS[DEFAULT_PROVIDER]["default_model"]
 BASE_URL = PROVIDERS[DEFAULT_PROVIDER]["base_url"]
 
-SYSTEM_PROMPT = (
+BASE_SYSTEM_PROMPT = (
     "You are an autonomous computer-use agent. "
     "You operate the desktop by observing screenshots and calling mouse/keyboard tools.\n"
     "Grounding Rules:\n"
@@ -93,6 +120,31 @@ SYSTEM_PROMPT = (
     "3. Only perform one logical action at a time so you can inspect the visual feedback.\n"
     "4. When the goal is completed, call 'finish_task'."
 )
+
+
+def build_system_prompt(vault: dict | None = None) -> str:
+    if vault is None:
+        vault = load_vault()
+
+    if not vault:
+        return BASE_SYSTEM_PROMPT
+
+    vault_json_str = json.dumps(vault, indent=2, ensure_ascii=False)
+    return (
+        f"{BASE_SYSTEM_PROMPT}\n\n"
+        "User Profile & Vault Data:\n"
+        "You have access to the user's verified personal profile and records provided below. "
+        "When performing tasks on behalf of the user (such as filling out forms, applications, "
+        "or entering user details), reference and use this information accurately whenever relevant "
+        "(e.g., personal identity, BSN, address, contact details, medical conditions, "
+        "functional limitations, requested provisions, etc.):\n"
+        "```json\n"
+        f"{vault_json_str}\n"
+        "```"
+    )
+
+
+SYSTEM_PROMPT = build_system_prompt()
 
 TOOLS = [
     {

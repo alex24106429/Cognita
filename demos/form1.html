@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Social Support Act (Wmo) Application — Municipality of The Hague</title>
+		<style>
+			:root {
+				--primary: #004c3f;
+				/* Den Haag municipal green */
+				--primary-hover: #00362d;
+				--accent: #ffcc00;
+				/* Den Haag yellow */
+				--bg: #f4f6f8;
+				--surface: #ffffff;
+				--border: #c3c8cf;
+				--text: #1a1a1a;
+				--text-muted: #595959;
+				--danger: #d32f2f;
+				--success: #2e7d32;
+			}
+
+			* {
+				box-sizing: border-box;
+				font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+			}
+
+			body {
+				margin: 0;
+				background-color: var(--bg);
+				color: var(--text);
+				line-height: 1.5;
+			}
+
+			/* Gov Header */
+			header {
+				background: var(--primary);
+				color: white;
+				padding: 12px 24px;
+				border-bottom: 4px solid var(--accent);
+			}
+
+			.header-container {
+				max-width: 960px;
+				margin: 0 auto;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+
+			.logo-area {
+				display: flex;
+				align-items: center;
+				gap: 12px;
+			}
+
+			.logo-area h1 {
+				font-size: 1.15rem;
+				margin: 0;
+				font-weight: 600;
+			}
+
+			.digid-badge {
+				background: rgba(255, 255, 255, 0.15);
+				padding: 4px 10px;
+				border-radius: 4px;
+				font-size: 0.8rem;
+			}
+
+			/* Timeout Bar */
+			.session-bar {
+				background: #fff3cd;
+				border-bottom: 1px solid #ffeeba;
+				padding: 8px 24px;
+				font-size: 0.85rem;
+				color: #856404;
+			}
+
+			.session-container {
+				max-width: 960px;
+				margin: 0 auto;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+
+			.timer-badge {
+				font-weight: bold;
+				color: var(--danger);
+				font-variant-numeric: tabular-nums;
+			}
+
+			/* Main Container */
+			main {
+				max-width: 960px;
+				margin: 24px auto;
+				padding: 0 16px;
+			}
+
+			.card {
+				background: var(--surface);
+				border: 1px solid var(--border);
+				border-radius: 4px;
+				padding: 28px;
+				box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+			}
+
+			/* Stepper */
+			.stepper {
+				display: flex;
+				justify-content: space-between;
+				margin-bottom: 32px;
+				border-bottom: 1px solid var(--border);
+				padding-bottom: 16px;
+			}
+
+			.step {
+				font-size: 0.85rem;
+				color: var(--text-muted);
+				font-weight: 500;
+				display: flex;
+				align-items: center;
+				gap: 8px;
+			}
+
+			.step.active {
+				color: var(--primary);
+				font-weight: 700;
+			}
+
+			.step-number {
+				width: 24px;
+				height: 24px;
+				border-radius: 50%;
+				background: #e0e0e0;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 0.75rem;
+			}
+
+			.step.active .step-number {
+				background: var(--primary);
+				color: white;
+			}
+
+			/* Form Fields */
+			.form-group {
+				margin-bottom: 20px;
+			}
+
+			.form-row {
+				display: flex;
+				gap: 16px;
+				margin-bottom: 16px;
+			}
+
+			.col-half {
+				flex: 1;
+			}
+
+			.col-quarter {
+				flex: 0.5;
+			}
+
+			label {
+				display: block;
+				margin-bottom: 6px;
+				font-size: 0.9rem;
+				font-weight: 600;
+				color: #2d3748;
+			}
+
+			.hint {
+				font-size: 0.8rem;
+				color: var(--text-muted);
+				margin-top: 4px;
+			}
+
+			input[type="text"],
+			input[type="date"],
+			textarea,
+			select {
+				width: 100%;
+				padding: 9px 12px;
+				border: 1px solid var(--border);
+				border-radius: 4px;
+				font-size: 0.95rem;
+			}
+
+			input:focus,
+			textarea:focus,
+			select:focus {
+				outline: 2px solid var(--primary);
+				border-color: var(--primary);
+			}
+
+			textarea {
+				resize: vertical;
+				min-height: 90px;
+			}
+
+			/* Radio / Checkboxes */
+			.option-group {
+				display: flex;
+				flex-direction: column;
+				gap: 8px;
+				margin-top: 6px;
+			}
+
+			.option-label {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				font-weight: 400;
+				cursor: pointer;
+				font-size: 0.9rem;
+			}
+
+			input[type="radio"],
+			input[type="checkbox"] {
+				width: 16px;
+				height: 16px;
+				cursor: pointer;
+				accent-color: var(--primary);
+			}
+
+			/* Navigation Buttons */
+			.button-row {
+				display: flex;
+				justify-content: space-between;
+				margin-top: 32px;
+				border-top: 1px solid #edf2f7;
+				padding-top: 20px;
+			}
+
+			button {
+				padding: 10px 22px;
+				border-radius: 4px;
+				font-size: 0.95rem;
+				font-weight: 600;
+				cursor: pointer;
+				border: none;
+			}
+
+			.btn-primary {
+				background: var(--primary);
+				color: white;
+			}
+
+			.btn-primary:hover {
+				background: var(--primary-hover);
+			}
+
+			.btn-secondary {
+				background: #e2e8f0;
+				color: var(--text);
+			}
+
+			.btn-secondary:hover {
+				background: #cbd5e1;
+			}
+
+			.btn-submit {
+				background: var(--success);
+				color: white;
+				font-size: 1rem;
+				padding: 12px 28px;
+			}
+
+			/* Step display management */
+			.form-step {
+				display: none;
+			}
+
+			.form-step.active {
+				display: block;
+			}
+
+			/* Success State */
+			.success-card {
+				text-align: center;
+				padding: 40px 20px;
+				display: none;
+			}
+
+			.success-icon {
+				font-size: 3rem;
+				color: var(--success);
+				margin-bottom: 16px;
+			}
+
+			/* Dev Assistant Drawer */
+			#dev-helper {
+				position: fixed;
+				bottom: 16px;
+				right: 16px;
+				background: #2d3748;
+				color: white;
+				padding: 10px 14px;
+				border-radius: 6px;
+				font-size: 0.8rem;
+				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+				z-index: 1000;
+			}
+
+			#dev-helper button {
+				background: #4a5568;
+				color: white;
+				border: none;
+				padding: 4px 8px;
+				margin-top: 6px;
+				font-size: 0.75rem;
+				border-radius: 3px;
+				cursor: pointer;
+			}
+		</style>
+	</head>
+
+	<body>
+
+		<header>
+			<div class="header-container">
+				<div class="logo-area">
+					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+					</svg>
+					<h1>Municipality of The Hague — Care and Welfare Desk</h1>
+				</div>
+				<div class="digid-badge">Logged in via DigiD: <strong>M.J. van den Berg</strong></div>
+			</div>
+		</header>
+
+		<!-- 15-Minute DigiD Timeout Simulator -->
+		<div class="session-bar">
+			<div class="session-container">
+				<span>⚠️ Your session is secure. It will expire automatically due to inactivity.</span>
+				<span>Time remaining: <span id="session-timer" class="timer-badge">14:59</span></span>
+			</div>
+		</div>
+
+		<main>
+			<div class="card">
+
+				<!-- Stepper Navigation Header -->
+				<div class="stepper">
+					<div class="step active" id="step-nav-1"><span class="step-number">1</span> Personal Details</div>
+					<div class="step" id="step-nav-2"><span class="step-number">2</span> Disabilities</div>
+					<div class="step" id="step-nav-3"><span class="step-number">3</span> Application</div>
+					<div class="step" id="step-nav-4"><span class="step-number">4</span> Confirmation</div>
+				</div>
+
+				<form id="wmo-form" onsubmit="return false;">
+
+					<!-- STEP 1: Personal Details -->
+					<div class="form-step active" id="step-1">
+						<h2>1. Personal Details & Living Situation</h2>
+						<p class="hint">Check and complete the missing details for your application to the Municipality of The Hague.</p>
+
+						<div class="form-group">
+							<label for="bsn">Citizen Service Number (BSN)</label>
+							<input type="text" id="bsn" name="bsn" placeholder="9 digits" maxlength="9">
+						</div>
+
+						<div class="form-row">
+							<div class="col-half">
+								<label for="initials">Initials</label>
+								<input type="text" id="initials" name="initials" placeholder="e.g. M.J.">
+							</div>
+							<div class="col-quarter">
+								<label for="prefix">Prefix</label>
+								<input type="text" id="prefix" name="prefix" placeholder="e.g. van den">
+							</div>
+							<div class="col-half">
+								<label for="last_name">Last Name</label>
+								<input type="text" id="last_name" name="last_name">
+							</div>
+						</div>
+
+						<div class="form-row">
+							<div class="col-half">
+								<label for="birth_date">Date of Birth</label>
+								<input type="date" id="birth_date" name="birth_date">
+							</div>
+							<div class="col-half">
+								<label for="phone">Phone Number</label>
+								<input type="text" id="phone" name="phone" placeholder="06-12345678">
+							</div>
+						</div>
+
+						<div class="form-row">
+							<div class="col-half" style="flex: 2;">
+								<label for="street">Street Name</label>
+								<input type="text" id="street" name="street">
+							</div>
+							<div class="col-quarter">
+								<label for="house_number">House No.</label>
+								<input type="text" id="house_number" name="house_number">
+							</div>
+							<div class="col-quarter">
+								<label for="house_ext">Ext.</label>
+								<input type="text" id="house_ext" name="house_ext">
+							</div>
+						</div>
+
+						<div class="form-row">
+							<div class="col-half">
+								<label for="postal_code">Postal Code</label>
+								<input type="text" id="postal_code" name="postal_code" placeholder="1234 AB">
+							</div>
+							<div class="col-half">
+								<label for="city">City</label>
+								<input type="text" id="city" name="city" value="The Hague">
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label>Type of Living Situation</label>
+							<div class="option-group">
+								<label class="option-label"><input type="radio" name="housing_type" value="koopwoning"> Owner-occupied home</label>
+								<label class="option-label"><input type="radio" name="housing_type" value="huurwoning"> Social rental home (housing association)</label>
+								<label class="option-label"><input type="radio" name="housing_type" value="particulier"> Private rental home</label>
+							</div>
+						</div>
+
+						<div class="button-row" style="justify-content: flex-end;">
+							<button type="button" class="btn-primary" id="btn-to-step-2" onclick="goToStep(2)">Next: Disabilities →</button>
+						</div>
+					</div>
+
+					<!-- STEP 2: Medical Situation & Disabilities -->
+					<div class="form-step" id="step-2">
+						<h2>2. Your Health & Disabilities</h2>
+						<p class="hint">Indicate in which areas you experience limitations in daily functioning.</p>
+
+						<div class="form-group">
+							<label for="diagnosis">Primary condition or illness</label>
+							<input type="text" id="diagnosis" name="diagnosis" placeholder="e.g. Multiple Sclerosis">
+						</div>
+
+						<div class="form-group">
+							<label>What is your maximum independent walking distance indoors/outdoors?</label>
+							<div class="option-group">
+								<label class="option-label"><input type="radio" name="walking_limit" value="less_than_10m"> Less than 10 meters</label>
+								<label class="option-label"><input type="radio" name="walking_limit" value="10_to_50m"> Between 10 and 50 meters</label>
+								<label class="option-label"><input type="radio" name="walking_limit" value="50_to_100m"> Between 50 and 100 meters</label>
+								<label class="option-label"><input type="radio" name="walking_limit" value="more_than_100m"> More than 100 meters</label>
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label>Do you experience severe limitations in hand/arm function (fine motor skills)?</label>
+							<div class="option-group">
+								<label class="option-label"><input type="radio" name="arm_function" value="yes"> Yes, severely reduced strength or tremors</label>
+								<label class="option-label"><input type="radio" name="arm_function" value="no"> No, normal function</label>
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label for="gp_name">Name of treating general practitioner (GP) / specialist</label>
+							<input type="text" id="gp_name" name="gp_name" placeholder="Name and practice">
+						</div>
+
+						<div class="form-group">
+							<label>Informal Care</label>
+							<div class="option-group">
+								<label class="option-label">
+									<input type="checkbox" id="informal_care" name="informal_care" value="yes">
+									I already receive informal care / support from a partner, family, or neighbours
+								</label>
+								<label class="option-label">
+									<input type="checkbox" id="caregiver_overloaded" name="caregiver_overloaded" value="yes">
+									My informal caregiver is at risk of burnout/overload
+								</label>
+							</div>
+						</div>
+
+						<div class="button-row">
+							<button type="button" class="btn-secondary" onclick="goToStep(1)">← Previous</button>
+							<button type="button" class="btn-primary" id="btn-to-step-3" onclick="goToStep(3)">Next: Application →</button>
+						</div>
+					</div>
+
+					<!-- STEP 3: Requested Support -->
+					<div class="form-step" id="step-3">
+						<h2>3. Requested Support</h2>
+						<p class="hint">Select which provisions are necessary to remain living independently and participate in society.</p>
+
+						<div class="form-group">
+							<label>Requested Wmo provision(s):</label>
+							<div class="option-group">
+								<label class="option-label"><input type="checkbox" name="facility" id="fac_electric_wheelchair" value="electric_wheelchair"> Electric wheelchair (indoor/outdoor)</label>
+								<label class="option-label"><input type="checkbox" name="facility" id="fac_scootmobiel" value="scootmobiel"> Mobility scooter</label>
+								<label class="option-label"><input type="checkbox" name="facility" id="fac_ramp" value="ramp"> Home adaptation (e.g. threshold ramp or stairlift)</label>
+								<label class="option-label"><input type="checkbox" name="facility" id="fac_regiotaxi" value="regiotaxi"> Collective transport pass (Regiotaxi)</label>
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label for="motivation">Substantiation of your application</label>
+							<div class="hint" style="margin-bottom: 6px;">Describe why simpler solutions (such as a manual wheelchair or walker) are no longer sufficient.</div>
+							<textarea id="motivation" name="motivation" placeholder="Explain your situation here..."></textarea>
+						</div>
+
+						<div class="form-group">
+							<label for="medical_doc">Medical statement attachment (optional)</label>
+							<input type="file" id="medical_doc" name="medical_doc">
+							<div class="hint">For example, a letter from a neurologist or rehabilitation physician (PDF/JPG).</div>
+						</div>
+
+						<div class="button-row">
+							<button type="button" class="btn-secondary" onclick="goToStep(2)">← Previous</button>
+							<button type="button" class="btn-primary" id="btn-to-step-4" onclick="goToStep(4)">Next: Overview →</button>
+						</div>
+					</div>
+
+					<!-- STEP 4: Confirmation & Submission -->
+					<div class="form-step" id="step-4">
+						<h2>4. Review & Final Submission</h2>
+						<p class="hint">Review the summary below carefully before submitting the application.</p>
+
+						<div id="review-box" style="background: #f8fafc; border: 1px solid var(--border); padding: 16px; border-radius: 4px; margin-bottom: 20px; font-size: 0.9rem;">
+							<!-- Rendered by JS -->
+						</div>
+
+						<div class="form-group">
+							<label class="option-label" style="font-weight: 600;">
+								<input type="checkbox" id="confirmation_check" name="confirmation_check">
+								I declare that I have completed the above details truthfully and grant permission for verification with the Personal Records Database (BRP).
+							</label>
+						</div>
+
+						<div class="button-row">
+							<button type="button" class="btn-secondary" onclick="goToStep(3)">← Previous</button>
+							<button type="button" class="btn-submit" id="submit-btn" onclick="submitForm()">Submit Final Application</button>
+						</div>
+					</div>
+
+				</form>
+
+				<!-- SUCCESS CONFIRMATION -->
+				<div class="success-card" id="success-screen">
+					<div class="success-icon">✓</div>
+					<h2>Application Successfully Received</h2>
+					<p>Your Wmo request has been registered with the <strong>Municipality of The Hague</strong> under reference number:</p>
+					<p style="font-size: 1.4rem; font-weight: 700; color: var(--primary);">WMO-DH-2024-8842</p>
+					<p class="hint">A Wmo consultant will contact you within 14 days for a personal assessment interview.</p>
+					<button class="btn-secondary" style="margin-top: 16px;" onclick="window.location.reload()">Start Over</button>
+				</div>
+
+			</div>
+		</main>
+
+		<script>
+			// 15-Minute Countdown Simulation
+			let totalSeconds = 15 * 60;
+			const timerElem = document.getElementById('session-timer');
+			const interval = setInterval(() => {
+				totalSeconds--;
+				if (totalSeconds <= 0) {
+					clearInterval(interval);
+					alert('Session expired due to inactivity. Your form has been cleared.');
+					window.location.reload();
+				}
+				const mins = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+				const secs = String(totalSeconds % 60).padStart(2, '0');
+				timerElem.textContent = `${mins}:${secs}`;
+			}, 1000);
+
+			// Step Switcher
+			function goToStep(stepIndex) {
+				document.querySelectorAll('.form-step').forEach(step => step.classList.remove('active'));
+				document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+
+				document.getElementById(`step-${stepIndex}`).classList.add('active');
+				document.getElementById(`step-nav-${stepIndex}`).classList.add('active');
+
+				if (stepIndex === 4) {
+					generateSummary();
+				}
+				window.scrollTo(0, 0);
+			}
+
+			// Populate summary for step 4
+			function generateSummary() {
+				const bsn = document.getElementById('bsn').value || '(Not filled in)';
+				const name = `${document.getElementById('initials').value} ${document.getElementById('prefix').value} ${document.getElementById('last_name').value}`.trim() || '(Not filled in)';
+				const street = `${document.getElementById('street').value} ${document.getElementById('house_number').value} ${document.getElementById('house_ext').value}`.trim();
+				const diagnosis = document.getElementById('diagnosis').value || '(Not filled in)';
+				const motivation = document.getElementById('motivation').value || '(Not filled in)';
+
+				const facilities = [];
+				if (document.getElementById('fac_electric_wheelchair').checked) facilities.push("Electric wheelchair");
+				if (document.getElementById('fac_ramp').checked) facilities.push("Home adaptation (threshold ramp)");
+				if (document.getElementById('fac_scootmobiel').checked) facilities.push("Mobility scooter");
+				if (document.getElementById('fac_regiotaxi').checked) facilities.push("Regiotaxi");
+
+				document.getElementById('review-box').innerHTML = `
+					<p><strong>Applicant:</strong> ${name} (BSN: ${bsn})</p>
+					<p><strong>Address:</strong> ${street}, ${document.getElementById('postal_code').value} The Hague</p>
+					<p><strong>Medical indication:</strong> ${diagnosis}</p>
+					<p><strong>Requested provisions:</strong> ${facilities.length > 0 ? facilities.join(', ') : 'None selected'}</p>
+					<p><strong>Motivation:</strong> <em>"${motivation}"</em></p>
+				`;
+			}
+
+			// Submit handler
+			function submitForm() {
+				const confirmed = document.getElementById('confirmation_check').checked;
+				if (!confirmed) {
+					alert('Please check the declaration statement to submit the form.');
+					return;
+				}
+				document.getElementById('wmo-form').style.display = 'none';
+				document.querySelector('.stepper').style.display = 'none';
+				document.getElementById('success-screen').style.display = 'block';
+				clearInterval(interval);
+			}
+		</script>
+	</body>
+
+</html>

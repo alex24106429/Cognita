@@ -8,7 +8,7 @@ import pyautogui
 from openai import OpenAI
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
-from config import SYSTEM_PROMPT, TOOLS, BASE_URL
+from config import SYSTEM_PROMPT, TOOLS, BASE_URL, build_system_prompt, load_vault
 from actions import capture_screen, execute_tool
 
 
@@ -34,6 +34,7 @@ class AgentWorker(QObject):
         self.action_pause = action_pause
         self.settle_pause = settle_pause
         self._abort = False
+        self.system_prompt = SYSTEM_PROMPT
         self.screen_w, self.screen_h = pyautogui.size()
 
     @pyqtSlot()
@@ -66,7 +67,7 @@ class AgentWorker(QObject):
 
         payload = {
             "model": self.model,
-            "system": SYSTEM_PROMPT,
+            "system": self.system_prompt,
             "messages": messages_history,
             "tools": anth_tools,
             "max_tokens": 1024,
@@ -102,6 +103,17 @@ class AgentWorker(QObject):
     def run(self):
         try:
             pyautogui.PAUSE = self.action_pause
+
+            # Dynamically reload vault data if present
+            vault_data = load_vault()
+            if vault_data:
+                self.system_prompt = build_system_prompt(vault_data)
+                self.log.emit(
+                    "info", "User vault loaded into context (data/vault.json).")
+            else:
+                self.system_prompt = build_system_prompt(None)
+                self.log.emit("info", "No user vault found.")
+
             self.log.emit("info", f"Provider: {self.provider}")
             self.log.emit("info", f"Model: {self.model}")
             self.log.emit("info", f"Base URL: {self.base_url}")
@@ -117,7 +129,7 @@ class AgentWorker(QObject):
                                 api_key=self.api_key or "dummy-key")
 
             messages = [] if is_anthropic else [
-                {"role": "system", "content": SYSTEM_PROMPT}]
+                {"role": "system", "content": self.system_prompt}]
             summary, success = "Loop ended without an explicit finish_task call.", False
 
             for step in range(1, self.max_steps + 1):
