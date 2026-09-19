@@ -1,5 +1,78 @@
-DEFAULT_MODEL = "nex-agi/nex-n2.5-pro:free"
-BASE_URL = "https://openrouter.ai/api/v1"
+PROVIDERS = {
+    "OpenRouter": {
+        "base_url": "https://openrouter.ai/api/v1",
+        "models": [
+            "nex-agi/nex-n2.5-pro:free",
+            "nex-agi/nex-n2.5-mini:free",
+            "inclusionai/ling-3.0-flash-vl:free",
+            "qwen/qwen3.8-27b:free",
+            "dots-studio/dots-3-note-preview:free",
+        ],
+        "default_model": "nex-agi/nex-n2.5-pro:free",
+        "key_required": True,
+        "key_placeholder": "sk-or-v1-…",
+        "description": "Unified access to all models (free)",
+    },
+    "OpenAI": {
+        "base_url": "https://api.openai.com/v1",
+        "models": [
+            "gpt-5.6-luna",
+            "gpt-4o-mini",
+        ],
+        "default_model": "gpt-5.6-luna",
+        "key_required": True,
+        "key_placeholder": "sk-…",
+        "description": "OpenAI API (GPT-5.6, GPT-4o)",
+    },
+    "Gemini": {
+        "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+        "models": [
+            "gemini-3.5-flash-lite",
+            "gemini-3.8-flash",
+        ],
+        "default_model": "gemini-3.5-flash-lite",
+        "key_required": True,
+        "key_placeholder": "AIzaSy…",
+        "description": "Google Gemini 3 (free tier available)",
+    },
+    "Anthropic": {
+        "base_url": "https://api.anthropic.com/v1",
+        "models": [
+            "claude-haiku-4-5",
+            "claude-sonnet-5",
+            "claude-opus-5",
+        ],
+        "default_model": "claude-haiku-4-5",
+        "key_required": True,
+        "key_placeholder": "sk-ant-…",
+        "description": "Anthropic Claude (Haiku, Sonnet, Opus)",
+    },
+    "DeepSeek": {
+        "base_url": "https://api.deepseek.com",
+        "models": [
+            "deepseek-flash",
+            "deepseek-v4-pro",
+        ],
+        "default_model": "deepseek-flash",
+        "key_required": True,
+        "key_placeholder": "sk-…",
+        "description": "DeepSeek (v4.1 Flash, v4 Pro)",
+    },
+    "Local": {
+        "base_url": "http://localhost:8080/v1",
+        "models": [
+            "local-model",
+        ],
+        "default_model": "local-model",
+        "key_required": False,
+        "key_placeholder": "Optional (e.g. not-needed)",
+        "description": "Local server (e.g. llama.cpp)",
+    },
+}
+
+DEFAULT_PROVIDER = "OpenRouter"
+DEFAULT_MODEL = PROVIDERS[DEFAULT_PROVIDER]["default_model"]
+BASE_URL = PROVIDERS[DEFAULT_PROVIDER]["base_url"]
 
 SYSTEM_PROMPT = (
     "You are an autonomous computer-use agent. "

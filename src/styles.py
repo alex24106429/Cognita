@@ -1,5 +1,5 @@
 APP_STYLESHEET = """
-    QMainWindow, QWidget { background: #1e1f26; color: #e6e6e6; }
+    QMainWindow, QWidget, QDialog { background: #1e1f26; color: #e6e6e6; }
     QGroupBox {
         border: 1px solid #34363f; border-radius: 6px;
         margin-top: 10px; padding: 10px 8px 8px 8px; font-weight: 600;
@@ -19,6 +19,15 @@ APP_STYLESHEET = """
     QPushButton#startBtn:hover { background: #379059; }
     QPushButton#stopBtn { background: #8e2f38; border-color: #ad3a44; font-weight: 700; }
     QPushButton#stopBtn:hover { background: #a3363f; }
+    QPushButton#configureBtn { background: #4b5bd6; border-color: #5d6de6; font-weight: 600; }
+    QPushButton#configureBtn:hover { background: #5a6ae6; }
+    QPushButton#providerSelectBtn {
+        background: #262833; border: 1px solid #3a3d4a;
+        border-radius: 6px; text-align: left;
+    }
+    QPushButton#providerSelectBtn:hover {
+        background: #313442; border-color: #6a74db;
+    }
     QLabel#preview { border: 1px dashed #3a3d4a; border-radius: 6px; color: #7b8094; }
     QProgressBar { border: 1px solid #3a3d4a; border-radius: 4px; text-align: center; }
     QProgressBar::chunk { background: #4b5bd6; }

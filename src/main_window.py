@@ -1,5 +1,5 @@
 import time
-from PyQt6.QtCore import Qt, QThread, pyqtSlot
+from PyQt6.QtCore import Qt, QThread, QTimer, pyqtSlot
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLineEdit, QPushButton, QGroupBox, QSplitter,
@@ -9,6 +9,7 @@ from styles import APP_STYLESHEET
 from config_panel import ConfigPanel
 from log_panel import LogPanel
 from preview_panel import PreviewPanel
+from api_setup_dialog import ApiSetupDialog, is_api_configured
 from worker import AgentWorker
 
 
@@ -22,6 +23,9 @@ class MainWindow(QMainWindow):
         self._build_ui()
         self.setStyleSheet(APP_STYLESHEET)
 
+        # Check API configuration immediately on startup
+        QTimer.singleShot(100, self._check_initial_api_configuration)
+
     def _build_ui(self):
         central = QWidget()
         root = QVBoxLayout(central)
@@ -29,6 +33,7 @@ class MainWindow(QMainWindow):
         root.setSpacing(10)
 
         self.cfg_panel = ConfigPanel()
+        self.cfg_panel.configure_api_requested.connect(self.open_api_setup)
         root.addWidget(self.cfg_panel)
 
         task_box = QGroupBox("Task")
@@ -38,7 +43,7 @@ class MainWindow(QMainWindow):
         self.task_edit.setPlaceholderText(
             "e.g. Open browser and search for weather in Berlin")
         self.task_edit.returnPressed.connect(self.start_agent)
-        self.task_edit.setMinimumHeight(32)
+        self.task_edit.setMinimumHeight(34)
 
         self.start_btn = QPushButton("▶  Run Agent", objectName="startBtn")
         self.start_btn.setMinimumHeight(34)
@@ -76,18 +81,41 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(central)
 
+    def _check_initial_api_configuration(self):
+        if not is_api_configured():
+            self.open_api_setup(prompt_first=True)
+
+    def open_api_setup(self, prompt_first: bool = False):
+        dialog = ApiSetupDialog(self)
+        if dialog.exec():
+            self.cfg_panel.refresh_api_info()
+            self.statusBar().showMessage("API configuration updated.")
+        else:
+            if not is_api_configured():
+                self.statusBar().showMessage(
+                    "API setup cancelled — agent cannot run until configured.")
+
     def start_agent(self):
         if self.thread:
             return
-        task, key = self.task_edit.text().strip(), self.cfg_panel.key_edit.text().strip()
-        if not key or not task:
-            QMessageBox.warning(self, "Missing fields",
-                                "Please provide both an API key and a task.")
+
+        if not is_api_configured():
+            QMessageBox.information(
+                self, "Setup Required", "Please configure your LLM provider and API credentials first."
+            )
+            self.open_api_setup()
+            return
+
+        task = self.task_edit.text().strip()
+        if not task:
+            QMessageBox.warning(self, "Missing Task",
+                                "Please enter a task for the agent to perform.")
             return
 
         res = QMessageBox.question(
             self, "Takeover Warning", "Agent will take control of mouse/keyboard. Continue?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
         if res != QMessageBox.StandardButton.Yes:
             return
 
@@ -95,10 +123,21 @@ class MainWindow(QMainWindow):
         self.cfg_panel.settings.setValue("last_task", task)
         self._set_running(True)
 
+        s = self.cfg_panel.settings
+        api_key = s.value("api_key", "")
+        model = s.value("model", "")
+        base_url = s.value("base_url", "")
+        provider = s.value("provider", "")
+
         self.worker = AgentWorker(
-            key, self.cfg_panel.model_edit.currentText().strip(), task,
-            self.cfg_panel.steps_spin.value(),
-            self.cfg_panel.pause_spin.value(), self.cfg_panel.settle_spin.value(),
+            api_key=api_key,
+            model=model,
+            goal=task,
+            max_steps=self.cfg_panel.steps_spin.value(),
+            action_pause=self.cfg_panel.pause_spin.value(),
+            settle_pause=self.cfg_panel.settle_spin.value(),
+            base_url=base_url,
+            provider=provider,
         )
         self.thread = QThread(self)
         self.worker.moveToThread(self.thread)
@@ -131,7 +170,9 @@ class MainWindow(QMainWindow):
     @pyqtSlot(bool, str)
     def on_finished(self, success: bool, summary: str):
         self.log_panel.append_log(
-            "info" if success else "warn", ("✅ DONE — " if success else "⏹ ENDED — ") + summary)
+            "info" if success else "warn", (
+                "✅ DONE — " if success else "⏹ ENDED — ") + summary
+        )
         self.statusBar().showMessage("Finished" if success else "Stopped")
         if self.thread:
             self.thread.quit()
