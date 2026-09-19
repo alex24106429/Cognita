@@ -282,9 +282,25 @@ class AgentWorker(QObject):
                             if effort in ("none", "minimal", "low", "medium", "high", "xhigh"):
                                 create_kwargs["reasoning_effort"] = effort
                         elif is_deepseek:
-                            effort = self.reasoning_effort
-                            if effort in ("low", "medium", "high", "max"):
+                            if self.reasoning_effort == "none" or self.reasoning_effort == "minimal":
+                                create_kwargs["extra_body"] = {
+                                    "thinking": {"type": "disabled"}
+                                }
+                            else:
+                                effort_map = {
+                                    "low": "low",
+                                    "medium": "low",
+                                    "high": "high",
+                                    "xhigh": "high",
+                                    "max": "max",
+                                    "ultra": "max",
+                                }
+                                effort = effort_map.get(
+                                    self.reasoning_effort, "high")
                                 create_kwargs["reasoning_effort"] = effort
+                                create_kwargs["extra_body"] = {
+                                    "thinking": {"type": "enabled"}
+                                }
                         elif is_openrouter:
                             create_kwargs["extra_body"] = {
                                 "reasoning": {
