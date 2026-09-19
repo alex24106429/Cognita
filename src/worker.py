@@ -250,7 +250,12 @@ class AgentWorker(QObject):
                     })
 
                     extra_headers = {}
-                    if "openrouter.ai" in self.base_url:
+                    is_openrouter = self.provider == "OpenRouter" or "openrouter.ai" in self.base_url
+                    is_openai = self.provider == "OpenAI" or "api.openai.com" in self.base_url
+                    is_gemini = self.provider == "Gemini" or "generativelanguage.googleapis.com" in self.base_url
+                    is_deepseek = self.provider == "DeepSeek" or "deepseek.com" in self.base_url
+
+                    if is_openrouter:
                         extra_headers = {
                             "HTTP-Referer": "https://localhost", "X-Title": "Cognita-Agent"}
 
@@ -265,16 +270,30 @@ class AgentWorker(QObject):
 
                     # Pass reasoning effort if explicitly configured
                     if self.reasoning_effort != "default":
-                        if self.provider == "OpenAI" or "api.openai.com" in self.base_url:
-                            if self.reasoning_effort in ("low", "medium", "high"):
-                                create_kwargs["reasoning_effort"] = self.reasoning_effort
-                        else:
-                            # OpenRouter unified reasoning specification
+                        if is_gemini:
+                            # Gemini's OpenAI-compatible endpoint accepts reasoning_effort at the top level
+                            effort = self.reasoning_effort
+                            if effort in ("xhigh", "max"):
+                                effort = "high"
+                            if effort in ("none", "minimal", "low", "medium", "high"):
+                                create_kwargs["reasoning_effort"] = effort
+                        elif is_openai:
+                            effort = self.reasoning_effort
+                            if effort in ("none", "minimal", "low", "medium", "high", "xhigh"):
+                                create_kwargs["reasoning_effort"] = effort
+                        elif is_deepseek:
+                            effort = self.reasoning_effort
+                            if effort in ("low", "medium", "high", "max"):
+                                create_kwargs["reasoning_effort"] = effort
+                        elif is_openrouter:
                             create_kwargs["extra_body"] = {
                                 "reasoning": {
                                     "effort": self.reasoning_effort
                                 }
                             }
+                        else:
+                            # Generic OpenAI-compatible local/custom servers
+                            create_kwargs["reasoning_effort"] = self.reasoning_effort
 
                     try:
                         response = client.chat.completions.create(
@@ -290,7 +309,13 @@ class AgentWorker(QObject):
                     # Extract reasoning tokens if returned by the model
                     reasoning_text = getattr(msg, "reasoning", None) or getattr(
                         msg, "reasoning_content", None)
-                    if reasoning_text:
+                    if isinstance(reasoning_text, dict):
+                        reasoning_text = (
+                            reasoning_text.get("text")
+                            or reasoning_text.get("reasoningContent")
+                            or str(reasoning_text)
+                        )
+                    if isinstance(reasoning_text, str) and reasoning_text.strip():
                         self.thought.emit(reasoning_text.strip())
 
                     if msg.content:
@@ -300,7 +325,8 @@ class AgentWorker(QObject):
                             self.log.emit("info", f"💬 {msg.content.strip()}")
 
                     if not msg.tool_calls:
-                        summary = msg.content or reasoning_text or "Model returned no action."
+                        summary = msg.content or (
+                            str(reasoning_text) if reasoning_text else "Model returned no action.")
                         break
 
                     self.status.emit("Executing actions…")
@@ -329,8 +355,12 @@ class AgentWorker(QObject):
                             self.log.emit("error", result)
 
                         self.log.emit("result", result)
-                        messages.append(
-                            {"role": "tool", "tool_call_id": tc.id, "content": result})
+                        messages.append({
+                            "role": "tool",
+                            "tool_call_id": tc.id,
+                            "name": fn_name,
+                            "content": result,
+                        })
                         if fn_name == "finish_task":
                             summary, completed, success = fn_args.get(
                                 "summary", "Done."), True, True

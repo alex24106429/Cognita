@@ -36,8 +36,6 @@ PROVIDERS = {
             "nex-agi/nex-n2.5-pro:free",
             "nex-agi/nex-n2.5-mini:free",
             "inclusionai/ling-3.0-flash-vl:free",
-            "qwen/qwen3.8-27b:free",
-            "dots-studio/dots-3-note-preview:free",
         ],
         "default_model": "nex-agi/nex-n2.5-pro:free",
         "key_required": True,
