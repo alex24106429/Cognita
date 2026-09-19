@@ -1,13 +1,21 @@
 import json
+import os
 import urllib.request
 import urllib.error
 from openai import OpenAI
 from PyQt6.QtCore import Qt, QSettings
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel,
     QPushButton, QLineEdit, QCheckBox, QComboBox, QStackedWidget,
     QFrame, QApplication
 )
+
+try:
+    import PyQt6.QtSvg  # noqa: F401 - ensures Qt SVG plugin is loaded
+except ImportError:
+    pass
+
 from config import PROVIDERS
 
 
@@ -85,7 +93,7 @@ class ApiSetupDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Cognita — API Setup")
-        self.resize(560, 420)
+        self.resize(580, 440)
         self.setModal(True)
 
         self.settings = QSettings("cognita", "gui")
@@ -138,20 +146,45 @@ class ApiSetupDialog(QDialog):
             cfg = PROVIDERS.get(name, {})
             btn = QPushButton()
             btn.setObjectName("providerSelectBtn")
-            btn.setMinimumHeight(60)
+            btn.setMinimumHeight(64)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
 
-            btn_layout = QVBoxLayout(btn)
-            btn_layout.setContentsMargins(10, 8, 10, 8)
-            btn_layout.setSpacing(2)
+            btn_layout = QHBoxLayout(btn)
+            btn_layout.setContentsMargins(12, 8, 12, 8)
+            btn_layout.setSpacing(12)
+
+            icon_lbl = QLabel()
+            icon_lbl.setFixedSize(36, 36)
+            icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            icon_lbl.setStyleSheet("background: transparent;")
+            icon_lbl.setAttribute(
+                Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+
+            icon_path = cfg.get("icon", "")
+            if icon_path and os.path.exists(icon_path):
+                icon_lbl.setPixmap(QIcon(icon_path).pixmap(32, 32))
+            btn_layout.addWidget(icon_lbl)
+
+            text_layout = QVBoxLayout()
+            text_layout.setContentsMargins(0, 0, 0, 0)
+            text_layout.setSpacing(2)
 
             title_lbl = QLabel(f"<b>{name}</b>")
-            title_lbl.setStyleSheet("font-size: 13px; color: #e6e6e6;")
-            desc_lbl = QLabel(cfg.get("description", ""))
-            desc_lbl.setStyleSheet("font-size: 10px; color: #8e92a4;")
-            desc_lbl.setWordWrap(True)
+            title_lbl.setStyleSheet(
+                "background: transparent; font-size: 13px; color: #e6e6e6;")
+            title_lbl.setAttribute(
+                Qt.WidgetAttribute.WA_TransparentForMouseEvents)
 
-            btn_layout.addWidget(title_lbl)
-            btn_layout.addWidget(desc_lbl)
+            desc_lbl = QLabel(cfg.get("description", ""))
+            desc_lbl.setStyleSheet(
+                "background: transparent; font-size: 10px; color: #8e92a4;")
+            desc_lbl.setWordWrap(True)
+            desc_lbl.setAttribute(
+                Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+
+            text_layout.addWidget(title_lbl)
+            text_layout.addWidget(desc_lbl)
+            btn_layout.addLayout(text_layout, 1)
 
             btn.clicked.connect(
                 lambda checked, p=name: self._on_provider_selected(p))
@@ -168,10 +201,21 @@ class ApiSetupDialog(QDialog):
         layout.setContentsMargins(0, 5, 0, 0)
         layout.setSpacing(10)
 
+        badge_row = QHBoxLayout()
+        badge_row.setSpacing(8)
+
+        self.provider_icon_lbl = QLabel()
+        self.provider_icon_lbl.setFixedSize(24, 24)
+        self.provider_icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.provider_icon_lbl.setStyleSheet("background: transparent;")
+        badge_row.addWidget(self.provider_icon_lbl)
+
         self.provider_badge = QLabel()
         self.provider_badge.setStyleSheet(
             "color: #7bd88f; font-weight: 600; font-size: 13px;")
-        layout.addWidget(self.provider_badge)
+        badge_row.addWidget(self.provider_badge)
+        badge_row.addStretch()
+        layout.addLayout(badge_row)
 
         layout.addWidget(QLabel("Base URL / Endpoint:"))
         self.url_edit = QLineEdit()
@@ -217,10 +261,21 @@ class ApiSetupDialog(QDialog):
         layout.setContentsMargins(0, 5, 0, 0)
         layout.setSpacing(12)
 
+        verified_row = QHBoxLayout()
+        verified_row.setSpacing(8)
+
+        self.model_provider_icon_lbl = QLabel()
+        self.model_provider_icon_lbl.setFixedSize(24, 24)
+        self.model_provider_icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.model_provider_icon_lbl.setStyleSheet("background: transparent;")
+        verified_row.addWidget(self.model_provider_icon_lbl)
+
         verified_banner = QLabel("✓ Connection verified successfully!")
         verified_banner.setStyleSheet(
             "color: #7bd88f; font-weight: 700; font-size: 13px;")
-        layout.addWidget(verified_banner)
+        verified_row.addWidget(verified_banner)
+        verified_row.addStretch()
+        layout.addLayout(verified_row)
 
         layout.addWidget(QLabel("Select Model:"))
         self.model_combo = QComboBox()
@@ -251,11 +306,23 @@ class ApiSetupDialog(QDialog):
 
     def _load_initial_values(self):
         if self.selected_provider in PROVIDERS:
+            cfg = PROVIDERS[self.selected_provider]
             self.url_edit.setText(
                 self.settings.value(
-                    "base_url", PROVIDERS[self.selected_provider]["base_url"])
+                    "base_url", cfg["base_url"])
             )
             self.key_edit.setText(self.settings.value("api_key", ""))
+            self.key_edit.setPlaceholderText(cfg.get("key_placeholder", ""))
+            self.provider_badge.setText(
+                f"Selected Provider: {self.selected_provider}")
+
+            icon_path = cfg.get("icon", "")
+            if icon_path and os.path.exists(icon_path):
+                self.provider_icon_lbl.setPixmap(
+                    QIcon(icon_path).pixmap(24, 24))
+                self.provider_icon_lbl.show()
+            else:
+                self.provider_icon_lbl.hide()
 
     def _update_header(self, step_index: int):
         if step_index == 0:
@@ -279,7 +346,6 @@ class ApiSetupDialog(QDialog):
         self.selected_provider = provider_name
         cfg = PROVIDERS.get(provider_name, {})
 
-        # Use saved base_url if previous provider was the same, else provider default
         saved_provider = self.settings.value("provider", "")
         if saved_provider == provider_name:
             self.url_edit.setText(self.settings.value(
@@ -290,7 +356,16 @@ class ApiSetupDialog(QDialog):
             self.key_edit.clear()
 
         self.key_edit.setPlaceholderText(cfg.get("key_placeholder", ""))
-        self.provider_badge.setText(f"Selected Provider: {provider_name}")
+        self.provider_badge.setText(provider_name)
+
+        icon_path = cfg.get("icon", "")
+        if icon_path and os.path.exists(icon_path):
+            self.provider_icon_lbl.setPixmap(QIcon(icon_path).pixmap(24, 24))
+            self.provider_icon_lbl.show()
+        else:
+            self.provider_icon_lbl.clear()
+            self.provider_icon_lbl.hide()
+
         self.status_lbl.clear()
         self._go_to_step(1)
 
@@ -317,6 +392,15 @@ class ApiSetupDialog(QDialog):
             self.verified_base_url = base_url
             self.verified_api_key = api_key
             self.status_lbl.clear()
+
+            icon_path = cfg.get("icon", "")
+            if icon_path and os.path.exists(icon_path):
+                self.model_provider_icon_lbl.setPixmap(
+                    QIcon(icon_path).pixmap(24, 24))
+                self.model_provider_icon_lbl.show()
+            else:
+                self.model_provider_icon_lbl.clear()
+                self.model_provider_icon_lbl.hide()
 
             # Populate models for selected provider
             self.model_combo.clear()

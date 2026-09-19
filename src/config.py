@@ -1,3 +1,7 @@
+from pathlib import Path
+
+ICONS_DIR = Path(__file__).resolve().parent.parent / "icons"
+
 PROVIDERS = {
     "OpenRouter": {
         "base_url": "https://openrouter.ai/api/v1",
@@ -12,6 +16,7 @@ PROVIDERS = {
         "key_required": True,
         "key_placeholder": "sk-or-v1-…",
         "description": "Unified access to all models (free)",
+        "icon": str(ICONS_DIR / "openrouter.svg"),
     },
     "OpenAI": {
         "base_url": "https://api.openai.com/v1",
@@ -23,6 +28,7 @@ PROVIDERS = {
         "key_required": True,
         "key_placeholder": "sk-…",
         "description": "OpenAI API (GPT-5.6, GPT-4o)",
+        "icon": str(ICONS_DIR / "openai.svg"),
     },
     "Gemini": {
         "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
@@ -34,6 +40,7 @@ PROVIDERS = {
         "key_required": True,
         "key_placeholder": "AIzaSy…",
         "description": "Google Gemini 3 (free tier available)",
+        "icon": str(ICONS_DIR / "gemini.svg"),
     },
     "Anthropic": {
         "base_url": "https://api.anthropic.com/v1",
@@ -46,6 +53,7 @@ PROVIDERS = {
         "key_required": True,
         "key_placeholder": "sk-ant-…",
         "description": "Anthropic Claude (Haiku, Sonnet, Opus)",
+        "icon": str(ICONS_DIR / "claude.svg"),
     },
     "DeepSeek": {
         "base_url": "https://api.deepseek.com",
@@ -57,6 +65,7 @@ PROVIDERS = {
         "key_required": True,
         "key_placeholder": "sk-…",
         "description": "DeepSeek (v4.1 Flash, v4 Pro)",
+        "icon": str(ICONS_DIR / "deepseek.svg"),
     },
     "Local": {
         "base_url": "http://localhost:8080/v1",
@@ -67,6 +76,7 @@ PROVIDERS = {
         "key_required": False,
         "key_placeholder": "Optional (e.g. not-needed)",
         "description": "Local server (e.g. llama.cpp)",
+        "icon": str(ICONS_DIR / "llama-cpp.svg"),
     },
 }
 

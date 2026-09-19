@@ -1,8 +1,17 @@
-from PyQt6.QtCore import pyqtSignal, QSettings
+import os
+from PyQt6.QtCore import pyqtSignal, QSettings, Qt
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
-    QGroupBox, QGridLayout, QHBoxLayout, QLabel,
+    QWidget, QGroupBox, QGridLayout, QHBoxLayout, QLabel,
     QPushButton, QCheckBox, QSpinBox, QDoubleSpinBox
 )
+
+try:
+    import PyQt6.QtSvg  # noqa: F401 - ensures Qt SVG plugin is loaded
+except ImportError:
+    pass
+
+from config import PROVIDERS
 from api_setup_dialog import is_api_configured
 
 
@@ -21,9 +30,24 @@ class ConfigPanel(QGroupBox):
         layout.setVerticalSpacing(8)
 
         # Row 0: Active API status display & Configure button
+        badge_container = QWidget()
+        badge_layout = QHBoxLayout(badge_container)
+        badge_layout.setContentsMargins(0, 0, 0, 0)
+        badge_layout.setSpacing(8)
+
+        self.provider_icon = QLabel()
+        self.provider_icon.setFixedSize(20, 20)
+        self.provider_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.provider_icon.setStyleSheet("background: transparent;")
+        self.provider_icon.hide()
+        badge_layout.addWidget(self.provider_icon)
+
         self.api_badge = QLabel()
         self.api_badge.setStyleSheet("font-size: 12px; padding: 3px 0;")
-        layout.addWidget(self.api_badge, 0, 0, 1, 4)
+        badge_layout.addWidget(self.api_badge)
+        badge_layout.addStretch()
+
+        layout.addWidget(badge_container, 0, 0, 1, 4)
 
         self.cfg_btn = QPushButton("⚙ Configure API…")
         self.cfg_btn.setObjectName("configureBtn")
@@ -79,7 +103,17 @@ class ConfigPanel(QGroupBox):
                 f"<b>Provider:</b> <span style='color:#7bd88f;'>{provider}</span> &nbsp;|&nbsp; "
                 f"<b>Model:</b> <span style='color:#8ab4f8;'>{model}</span>"
             )
+            cfg = PROVIDERS.get(provider, {})
+            icon_path = cfg.get("icon", "")
+            if icon_path and os.path.exists(icon_path):
+                self.provider_icon.setPixmap(QIcon(icon_path).pixmap(20, 20))
+                self.provider_icon.show()
+            else:
+                self.provider_icon.clear()
+                self.provider_icon.hide()
         else:
+            self.provider_icon.clear()
+            self.provider_icon.hide()
             self.api_badge.setText(
                 "<span style='color:#ff6b6b;'>⚠️ API not configured. Please click 'Configure API' to begin.</span>"
             )

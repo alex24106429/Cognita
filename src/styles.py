@@ -28,6 +28,9 @@ APP_STYLESHEET = """
     QPushButton#providerSelectBtn:hover {
         background: #313442; border-color: #6a74db;
     }
+    QPushButton#providerSelectBtn:pressed {
+        background: #3a3e52;
+    }
     QLabel#preview { border: 1px dashed #3a3d4a; border-radius: 6px; color: #7b8094; }
     QProgressBar { border: 1px solid #3a3d4a; border-radius: 4px; text-align: center; }
     QProgressBar::chunk { background: #4b5bd6; }
