@@ -119,7 +119,7 @@ BASE_SYSTEM_PROMPT = (
     "1. Screen coordinates are normalized: X and Y ranges from 0 to 1000 "
     "(top-left is [0, 0], bottom-right is [1000, 1000]).\n"
     "2. Look closely at the latest screenshot to verify if your previous action succeeded.\n"
-    "3. Only perform one logical action at a time so you can inspect the visual feedback.\n"
+    "3. Use 'click_and_type' whenever possible to click an input field and enter text in a single step.\n"
     "4. When the goal is completed, call 'finish_task'."
 )
 
@@ -172,27 +172,44 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "click_and_type",
+            "description": "Click an input field at coordinates (x, y) and type text into it.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "x": {"type": "integer", "description": "X coordinate in normalized [0-1000] space."},
+                    "y": {"type": "integer", "description": "Y coordinate in normalized [0-1000] space."},
+                    "text": {"type": "string", "description": "Text to type."},
+                    "press_enter": {"type": "boolean", "description": "Whether to press Enter key after typing."},
+                },
+                "required": ["x", "y", "text"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "mouse_scroll",
-            "description": "Scroll the mouse wheel up or down. Optionally moves cursor to a specific coordinate first.",
+            "description": "Scroll the mouse wheel up or down. Moves cursor to a safe neutral position if x/y not provided.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "direction": {
                         "type": "string",
                         "enum": ["up", "down"],
-                        "description": "Direction to scroll: 'down' (to scroll down/see lower content) or 'up' (to scroll up/see higher content).",
+                        "description": "Direction to scroll: 'down' (to see lower content) or 'up' (to see higher content).",
                     },
                     "amount": {
                         "type": "integer",
-                        "description": "Number of scroll clicks/steps (e.g. 5 for typical scrolling). Default is 5.",
+                        "description": "Number of scroll clicks/steps. Default is 5.",
                     },
                     "x": {
                         "type": "integer",
-                        "description": "Optional X coordinate in normalized [0-1000] space to position cursor before scrolling.",
+                        "description": "Optional X coordinate in normalized [0-1000] space.",
                     },
                     "y": {
                         "type": "integer",
-                        "description": "Optional Y coordinate in normalized [0-1000] space to position cursor before scrolling.",
+                        "description": "Optional Y coordinate in normalized [0-1000] space.",
                     },
                 },
                 "required": ["direction"],

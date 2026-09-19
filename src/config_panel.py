@@ -60,14 +60,14 @@ class ConfigPanel(QGroupBox):
         self.pause_spin = QDoubleSpinBox()
         self.pause_spin.setRange(0.0, 5.0)
         self.pause_spin.setSingleStep(0.1)
-        self.pause_spin.setValue(0.5)
+        self.pause_spin.setValue(0.2)
         layout.addWidget(self.pause_spin, 1, 1)
 
         layout.addWidget(QLabel("Settle pause (s):"), 1, 2)
         self.settle_spin = QDoubleSpinBox()
         self.settle_spin.setRange(0.0, 10.0)
-        self.settle_spin.setSingleStep(0.5)
-        self.settle_spin.setValue(1.0)
+        self.settle_spin.setSingleStep(0.1)
+        self.settle_spin.setValue(0.3)
         layout.addWidget(self.settle_spin, 1, 3)
 
         # Row 2: Target Selection (Local vs Remote Device)
@@ -118,7 +118,6 @@ class ConfigPanel(QGroupBox):
         opts.addStretch()
         layout.addLayout(opts, 3, 2, 1, 4)
 
-        # Initialize visibility/state of remote fields
         self._on_target_mode_changed(self.target_mode_combo.currentIndex())
 
     def _on_target_mode_changed(self, index: int):
@@ -126,13 +125,12 @@ class ConfigPanel(QGroupBox):
         self.remote_host_edit.setEnabled(is_remote)
         self.remote_token_edit.setEnabled(is_remote)
         if is_remote:
-            # When targeting a remote machine, uncheck minimize so user can monitor logs/preview
             self.hide_cb.setChecked(False)
 
     def load_settings(self):
         s = self.settings
-        self.pause_spin.setValue(float(s.value("pause", 0.5)))
-        self.settle_spin.setValue(float(s.value("settle", 1.0)))
+        self.pause_spin.setValue(float(s.value("pause", 0.2)))
+        self.settle_spin.setValue(float(s.value("settle", 0.3)))
         self.hide_cb.setChecked(s.value("hide", True, type=bool))
 
         target_mode = int(s.value("target_mode", 0))

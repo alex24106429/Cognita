@@ -19,7 +19,7 @@ def execute_tool(name: str, args: dict, screen_w: int, screen_h: int,
     if name == "mouse_click":
         x, y = to_screen_coords(args["x"], args["y"], screen_w, screen_h)
         button = args.get("button", "left")
-        pyautogui.moveTo(x, y, duration=0.3)
+        pyautogui.moveTo(x, y, duration=0.1)
         if button == "double":
             pyautogui.doubleClick()
         elif button == "right":
@@ -28,13 +28,28 @@ def execute_tool(name: str, args: dict, screen_w: int, screen_h: int,
             pyautogui.click()
         return f"Clicked at screen ({x}, {y}) [normalized {args['x']}, {args['y']}]."
 
+    if name == "click_and_type":
+        x, y = to_screen_coords(args["x"], args["y"], screen_w, screen_h)
+        pyautogui.moveTo(x, y, duration=0.1)
+        pyautogui.click()
+
+        text = args["text"]
+
+        pyautogui.write(text, interval=0.01)
+
+        if args.get("press_enter"):
+            pyautogui.press("enter")
+        return f"Clicked at ({x}, {y}) and typed text ({len(text)} chars)."
+
     if name in ("mouse_scroll", "scroll"):
-        loc_str = ""
-        # Move cursor first if target coordinates are provided
+        # If no coordinates provided, move mouse to safe screen center to avoid scrolling inside textareas
         if "x" in args and "y" in args and args["x"] is not None and args["y"] is not None:
             x, y = to_screen_coords(args["x"], args["y"], screen_w, screen_h)
-            pyautogui.moveTo(x, y, duration=0.2)
-            loc_str = f" at screen ({x}, {y}) [normalized {args['x']}, {args['y']}]"
+            pyautogui.moveTo(x, y, duration=0.1)
+            loc_str = f" at screen ({x}, {y})"
+        else:
+            pyautogui.moveTo(screen_w // 2, screen_h // 2, duration=0.1)
+            loc_str = " at center viewport"
 
         direction = str(args.get("direction", "down")).lower()
         amount = args.get("amount") if args.get(
@@ -44,19 +59,9 @@ def execute_tool(name: str, args: dict, screen_w: int, screen_h: int,
         except (ValueError, TypeError):
             amount = 5
 
-        # In PyAutoGUI, positive is up, negative is down
-        if direction == "up":
-            clicks = abs(amount)
-        elif direction == "down":
-            clicks = -abs(amount)
-        else:
-            clicks = amount
-
-        # Windows WHEEL_DELTA compensation: 1 notch = 120 units in win32 mouse_event.
-        # Small click counts (< 50) are scaled so the OS registers visible movement.
-        scroll_units = clicks
-        if sys.platform == "win32" and abs(clicks) < 50:
-            scroll_units = clicks * 120
+        clicks = abs(amount) if direction == "up" else -abs(amount)
+        scroll_units = clicks * \
+            120 if sys.platform == "win32" and abs(clicks) < 50 else clicks
 
         pyautogui.scroll(scroll_units)
         dir_label = "up" if clicks > 0 else "down"
