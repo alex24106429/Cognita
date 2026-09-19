@@ -19,7 +19,7 @@ class ConfigPanel(QGroupBox):
     configure_api_requested = pyqtSignal()
 
     def __init__(self, parent=None):
-        super().__init__("Execution & API Settings", parent)
+        super().__init__("Settings", parent)
         self.settings = QSettings("cognita", "gui")
         self._build_ui()
         self.load_settings()

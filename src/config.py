@@ -59,12 +59,11 @@ PROVIDERS = {
         "base_url": "https://api.deepseek.com",
         "models": [
             "deepseek-flash",
-            "deepseek-v4-pro",
         ],
         "default_model": "deepseek-flash",
         "key_required": True,
         "key_placeholder": "sk-…",
-        "description": "DeepSeek (v4.1 Flash, v4 Pro)",
+        "description": "DeepSeek v4.1 Flash",
         "icon": str(ICONS_DIR / "deepseek.svg"),
     },
     "Local": {
