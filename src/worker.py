@@ -23,12 +23,14 @@ class AgentWorker(QObject):
 
     def __init__(self, api_key: str, model: str, goal: str, max_steps: int,
                  action_pause: float, settle_pause: float,
-                 base_url: str = None, provider: str = None, parent=None):
+                 base_url: str = None, provider: str = None,
+                 reasoning_effort: str = "default", parent=None):
         super().__init__(parent)
         self.api_key = api_key
         self.model = model
         self.base_url = base_url or BASE_URL
         self.provider = provider or "OpenRouter"
+        self.reasoning_effort = reasoning_effort or "default"
         self.goal = goal
         self.max_steps = max_steps
         self.action_pause = action_pause
@@ -55,7 +57,6 @@ class AgentWorker(QObject):
         if not url.endswith("/messages"):
             url = f"{url}/messages"
 
-        # Transform TOOLS into Anthropic's input_schema format
         anth_tools = [
             {
                 "name": t["function"]["name"],
@@ -73,6 +74,11 @@ class AgentWorker(QObject):
             "max_tokens": 1024,
             "temperature": 0.2,
         }
+
+        # Configure reasoning effort for Anthropic
+        if self.reasoning_effort != "default" and self.reasoning_effort in ("low", "medium", "high", "xhigh", "max"):
+            payload["output_config"] = {"effort": self.reasoning_effort}
+            payload["max_tokens"] = max(payload.get("max_tokens", 1024), 4096)
 
         req = urllib.request.Request(
             url,
@@ -94,6 +100,8 @@ class AgentWorker(QObject):
         for block in data.get("content", []):
             if block.get("type") == "text":
                 thought_text += block.get("text", "")
+            elif block.get("type") == "thinking":
+                thought_text += block.get("thinking", "")
             elif block.get("type") == "tool_use":
                 tool_calls.append(block)
 
@@ -116,6 +124,7 @@ class AgentWorker(QObject):
 
             self.log.emit("info", f"Provider: {self.provider}")
             self.log.emit("info", f"Model: {self.model}")
+            self.log.emit("info", f"Reasoning effort: {self.reasoning_effort}")
             self.log.emit("info", f"Base URL: {self.base_url}")
             self.log.emit(
                 "info", f"Screen resolution: {self.screen_w}×{self.screen_h}")
@@ -234,15 +243,31 @@ class AgentWorker(QObject):
                         extra_headers = {
                             "HTTP-Referer": "https://localhost", "X-Title": "Cognita-Agent"}
 
+                    create_kwargs = {
+                        "model": self.model,
+                        "messages": messages,
+                        "tools": TOOLS,
+                        "tool_choice": "auto",
+                        "extra_headers": extra_headers if extra_headers else None,
+                        "temperature": 0.2,
+                    }
+
+                    # Pass reasoning effort if explicitly configured
+                    if self.reasoning_effort != "default":
+                        if self.provider == "OpenAI" or "api.openai.com" in self.base_url:
+                            if self.reasoning_effort in ("low", "medium", "high"):
+                                create_kwargs["reasoning_effort"] = self.reasoning_effort
+                        else:
+                            # OpenRouter unified reasoning specification
+                            create_kwargs["extra_body"] = {
+                                "reasoning": {
+                                    "effort": self.reasoning_effort
+                                }
+                            }
+
                     try:
                         response = client.chat.completions.create(
-                            model=self.model,
-                            messages=messages,
-                            tools=TOOLS,
-                            tool_choice="auto",
-                            extra_headers=extra_headers if extra_headers else None,
-                            temperature=0.2,
-                        )
+                            **create_kwargs)
                     except Exception as e:
                         self.log.emit("error", f"API call failed: {e}")
                         summary = f"API error: {e}"
@@ -250,10 +275,21 @@ class AgentWorker(QObject):
 
                     msg = response.choices[0].message
                     messages.append(msg)
+
+                    # Extract reasoning tokens if returned by the model
+                    reasoning_text = getattr(msg, "reasoning", None) or getattr(
+                        msg, "reasoning_content", None)
+                    if reasoning_text:
+                        self.thought.emit(reasoning_text.strip())
+
                     if msg.content:
-                        self.thought.emit(msg.content.strip())
+                        if not reasoning_text:
+                            self.thought.emit(msg.content.strip())
+                        else:
+                            self.log.emit("info", f"💬 {msg.content.strip()}")
+
                     if not msg.tool_calls:
-                        summary = msg.content or "Model returned no action."
+                        summary = msg.content or reasoning_text or "Model returned no action."
                         break
 
                     self.status.emit("Executing actions…")

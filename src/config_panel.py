@@ -3,7 +3,7 @@ from PyQt6.QtCore import pyqtSignal, QSettings, Qt
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QWidget, QGroupBox, QGridLayout, QHBoxLayout, QLabel,
-    QPushButton, QCheckBox, QSpinBox, QDoubleSpinBox
+    QPushButton, QCheckBox, QSpinBox, QDoubleSpinBox, QComboBox
 )
 
 try:
@@ -11,7 +11,7 @@ try:
 except ImportError:
     pass
 
-from config import PROVIDERS
+from config import PROVIDERS, REASONING_EFFORTS, DEFAULT_REASONING_EFFORT
 from api_setup_dialog import is_api_configured
 
 
@@ -76,6 +76,15 @@ class ConfigPanel(QGroupBox):
         layout.addWidget(self.settle_spin, 1, 5)
 
         # Row 2: Runtime options
+        layout.addWidget(QLabel("Reasoning effort:"), 2, 0)
+        self.reasoning_combo = QComboBox()
+        self.reasoning_combo.addItems(REASONING_EFFORTS)
+        self.reasoning_combo.setToolTip(
+            "Control reasoning / thinking token allocation (default, none, minimal, low, medium, high, xhigh, max)"
+        )
+        self.reasoning_combo.currentTextChanged.connect(self.save_settings)
+        layout.addWidget(self.reasoning_combo, 2, 1)
+
         opts = QHBoxLayout()
         self.hide_cb = QCheckBox("Minimise this window while the agent works")
         self.hide_cb.setChecked(True)
@@ -84,7 +93,7 @@ class ConfigPanel(QGroupBox):
         opts.addWidget(self.hide_cb)
         opts.addWidget(self.autoscroll_cb)
         opts.addStretch()
-        layout.addLayout(opts, 2, 0, 1, 6)
+        layout.addLayout(opts, 2, 2, 1, 4)
 
     def load_settings(self):
         s = self.settings
@@ -92,6 +101,14 @@ class ConfigPanel(QGroupBox):
         self.pause_spin.setValue(float(s.value("pause", 0.5)))
         self.settle_spin.setValue(float(s.value("settle", 1.0)))
         self.hide_cb.setChecked(s.value("hide", True, type=bool))
+
+        effort = s.value("reasoning_effort", DEFAULT_REASONING_EFFORT)
+        idx = self.reasoning_combo.findText(effort)
+        if idx >= 0:
+            self.reasoning_combo.setCurrentIndex(idx)
+        else:
+            self.reasoning_combo.setCurrentText(DEFAULT_REASONING_EFFORT)
+
         self.refresh_api_info()
 
     def refresh_api_info(self):
@@ -124,8 +141,9 @@ class ConfigPanel(QGroupBox):
         s.setValue("pause", self.pause_spin.value())
         s.setValue("settle", self.settle_spin.value())
         s.setValue("hide", self.hide_cb.isChecked())
+        s.setValue("reasoning_effort", self.reasoning_combo.currentText())
 
     def set_running(self, running: bool):
         for w in (self.cfg_btn, self.steps_spin, self.pause_spin,
-                  self.settle_spin, self.hide_cb):
+                  self.settle_spin, self.reasoning_combo, self.hide_cb):
             w.setEnabled(not running)

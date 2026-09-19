@@ -128,6 +128,7 @@ class MainWindow(QMainWindow):
         model = s.value("model", "")
         base_url = s.value("base_url", "")
         provider = s.value("provider", "")
+        reasoning_effort = self.cfg_panel.reasoning_combo.currentText()
 
         self.worker = AgentWorker(
             api_key=api_key,
@@ -138,6 +139,7 @@ class MainWindow(QMainWindow):
             settle_pause=self.cfg_panel.settle_spin.value(),
             base_url=base_url,
             provider=provider,
+            reasoning_effort=reasoning_effort,
         )
         self.thread = QThread(self)
         self.worker.moveToThread(self.thread)

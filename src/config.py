@@ -110,6 +110,10 @@ DEFAULT_PROVIDER = "OpenRouter"
 DEFAULT_MODEL = PROVIDERS[DEFAULT_PROVIDER]["default_model"]
 BASE_URL = PROVIDERS[DEFAULT_PROVIDER]["base_url"]
 
+REASONING_EFFORTS = ["default", "none", "minimal",
+                     "low", "medium", "high", "xhigh", "max"]
+DEFAULT_REASONING_EFFORT = "default"
+
 BASE_SYSTEM_PROMPT = (
     "You are an autonomous computer-use agent. "
     "You operate the desktop by observing screenshots and calling mouse/keyboard tools.\n"
