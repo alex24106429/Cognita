@@ -19,14 +19,13 @@ class AgentWorker(QObject):
     status = pyqtSignal(str)
     finished = pyqtSignal(bool, str)
 
-    def __init__(self, api_key, model, goal, max_steps, dry_run,
+    def __init__(self, api_key, model, goal, max_steps,
                  action_pause, settle_pause, parent=None):
         super().__init__(parent)
         self.api_key = api_key
         self.model = model
         self.goal = goal
         self.max_steps = max_steps
-        self.dry_run = dry_run
         self.action_pause = action_pause
         self.settle_pause = settle_pause
         self._abort = False
@@ -53,7 +52,7 @@ class AgentWorker(QObject):
             self.log.emit(
                 "info", f"Screen resolution: {self.screen_w}×{self.screen_h}")
             self.log.emit(
-                "info", f"Model: {self.model}{' (DRY-RUN)' if self.dry_run else ''}")
+                "info", f"Model: {self.model}")
             self.log.emit("task", f"=== Starting Task: {self.goal} ===")
 
             messages = [{"role": "system", "content": SYSTEM_PROMPT}]
@@ -119,7 +118,7 @@ class AgentWorker(QObject):
 
                     try:
                         result = execute_tool(fn_name, fn_args, self.screen_w, self.screen_h,
-                                              self.dry_run, self._sleep)
+                                              self._sleep)
                     except pyautogui.FailSafeException:
                         self.log.emit(
                             "error", "PyAutoGUI fail-safe triggered (mouse in corner).")

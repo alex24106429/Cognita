@@ -64,13 +64,10 @@ class ConfigPanel(QGroupBox):
         g.addWidget(self.settle_spin, 2, 5)
 
         opts = QHBoxLayout()
-        self.dry_run_cb = QCheckBox(
-            "Dry run (plan only, don't touch mouse/keyboard)")
         self.hide_cb = QCheckBox("Minimise this window while the agent works")
         self.hide_cb.setChecked(True)
         self.autoscroll_cb = QCheckBox("Auto-scroll log")
         self.autoscroll_cb.setChecked(True)
-        opts.addWidget(self.dry_run_cb)
         opts.addWidget(self.hide_cb)
         opts.addWidget(self.autoscroll_cb)
         opts.addStretch()
@@ -97,5 +94,5 @@ class ConfigPanel(QGroupBox):
 
     def set_running(self, running: bool):
         for w in (self.key_edit, self.model_edit, self.steps_spin,
-                  self.pause_spin, self.settle_spin, self.dry_run_cb, self.hide_cb):
+                  self.pause_spin, self.settle_spin, self.hide_cb):
             w.setEnabled(not running)

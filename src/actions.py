@@ -14,10 +14,7 @@ def to_screen_coords(nx: int, ny: int, screen_w: int, screen_h: int):
 
 
 def execute_tool(name: str, args: dict, screen_w: int, screen_h: int,
-                 dry_run: bool = False, sleep_fn=None) -> str:
-    if dry_run and name not in ("wait", "finish_task"):
-        return f"[DRY-RUN] Would have executed {name} with {args}."
-
+                 sleep_fn=None) -> str:
     if name == "mouse_click":
         x, y = to_screen_coords(args["x"], args["y"], screen_w, screen_h)
         button = args.get("button", "left")

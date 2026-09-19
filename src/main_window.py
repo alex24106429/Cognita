@@ -85,12 +85,11 @@ class MainWindow(QMainWindow):
                                 "Please provide both an API key and a task.")
             return
 
-        if not self.cfg_panel.dry_run_cb.isChecked():
-            res = QMessageBox.question(
-                self, "Takeover Warning", "Agent will take control of mouse/keyboard. Continue?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-            if res != QMessageBox.StandardButton.Yes:
-                return
+        res = QMessageBox.question(
+            self, "Takeover Warning", "Agent will take control of mouse/keyboard. Continue?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        if res != QMessageBox.StandardButton.Yes:
+            return
 
         self.cfg_panel.save_settings()
         self.cfg_panel.settings.setValue("last_task", task)
@@ -98,7 +97,7 @@ class MainWindow(QMainWindow):
 
         self.worker = AgentWorker(
             key, self.cfg_panel.model_edit.currentText().strip(), task,
-            self.cfg_panel.steps_spin.value(), self.cfg_panel.dry_run_cb.isChecked(),
+            self.cfg_panel.steps_spin.value(),
             self.cfg_panel.pause_spin.value(), self.cfg_panel.settle_spin.value(),
         )
         self.thread = QThread(self)
@@ -116,7 +115,7 @@ class MainWindow(QMainWindow):
         self.worker.status.connect(self.statusBar().showMessage)
         self.worker.finished.connect(self.on_finished)
 
-        if self.cfg_panel.hide_cb.isChecked() and not self.cfg_panel.dry_run_cb.isChecked():
+        if self.cfg_panel.hide_cb.isChecked():
             self.showMinimized()
             QApplication.processEvents()
             time.sleep(0.6)
