@@ -3,7 +3,7 @@ from PyQt6.QtCore import Qt, QThread, QTimer, pyqtSlot
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLineEdit, QPushButton, QGroupBox, QSplitter,
-    QMessageBox, QProgressBar, QStatusBar, QApplication
+    QMessageBox, QStatusBar, QApplication
 )
 from styles import APP_STYLESHEET
 from config_panel import ConfigPanel
@@ -72,10 +72,7 @@ class MainWindow(QMainWindow):
         splitter.setSizes([640, 520])
         root.addWidget(splitter, 1)
 
-        self.progress = QProgressBar(maximumWidth=220, visible=False)
-        self.progress.setFormat("step %v / %m")
         sb = QStatusBar()
-        sb.addPermanentWidget(self.progress)
         self.setStatusBar(sb)
         self.statusBar().showMessage(
             "Idle — fail-safe active: fling mouse to corner to abort.")
@@ -157,7 +154,6 @@ class MainWindow(QMainWindow):
             api_key=api_key,
             model=model,
             goal=task,
-            max_steps=self.cfg_panel.steps_spin.value(),
             action_pause=self.cfg_panel.pause_spin.value(),
             settle_pause=self.cfg_panel.settle_spin.value(),
             base_url=base_url,
@@ -175,8 +171,6 @@ class MainWindow(QMainWindow):
         self.worker.action.connect(
             lambda n, a: self.log_panel.append_log("action", f"⚙ {n} {a}"))
         self.worker.screenshot.connect(self.preview_panel.update_preview)
-        self.worker.step.connect(lambda cur, tot: (
-            self.progress.setMaximum(tot), self.progress.setValue(cur)))
         self.worker.status.connect(self.statusBar().showMessage)
         self.worker.finished.connect(self.on_finished)
 
@@ -215,7 +209,6 @@ class MainWindow(QMainWindow):
         self.start_btn.setEnabled(not running)
         self.stop_btn.setEnabled(running)
         self.task_edit.setEnabled(not running)
-        self.progress.setVisible(running)
         self.cfg_panel.set_running(running)
 
     def closeEvent(self, e):

@@ -3,7 +3,7 @@ from PyQt6.QtCore import pyqtSignal, QSettings, Qt
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QWidget, QGroupBox, QGridLayout, QHBoxLayout, QLabel,
-    QPushButton, QCheckBox, QSpinBox, QDoubleSpinBox, QComboBox,
+    QPushButton, QCheckBox, QDoubleSpinBox, QComboBox,
     QLineEdit
 )
 
@@ -55,26 +55,20 @@ class ConfigPanel(QGroupBox):
         self.cfg_btn.clicked.connect(self.configure_api_requested.emit)
         layout.addWidget(self.cfg_btn, 0, 4, 1, 2)
 
-        # Row 1: Execution parameters (steps, pauses)
-        layout.addWidget(QLabel("Max steps:"), 1, 0)
-        self.steps_spin = QSpinBox()
-        self.steps_spin.setRange(1, 200)
-        self.steps_spin.setValue(15)
-        layout.addWidget(self.steps_spin, 1, 1)
-
-        layout.addWidget(QLabel("Action pause (s):"), 1, 2)
+        # Row 1: Execution parameters (pauses)
+        layout.addWidget(QLabel("Action pause (s):"), 1, 0)
         self.pause_spin = QDoubleSpinBox()
         self.pause_spin.setRange(0.0, 5.0)
         self.pause_spin.setSingleStep(0.1)
         self.pause_spin.setValue(0.5)
-        layout.addWidget(self.pause_spin, 1, 3)
+        layout.addWidget(self.pause_spin, 1, 1)
 
-        layout.addWidget(QLabel("Settle pause (s):"), 1, 4)
+        layout.addWidget(QLabel("Settle pause (s):"), 1, 2)
         self.settle_spin = QDoubleSpinBox()
         self.settle_spin.setRange(0.0, 10.0)
         self.settle_spin.setSingleStep(0.5)
         self.settle_spin.setValue(1.0)
-        layout.addWidget(self.settle_spin, 1, 5)
+        layout.addWidget(self.settle_spin, 1, 3)
 
         # Row 2: Target Selection (Local vs Remote Device)
         layout.addWidget(QLabel("Target:"), 2, 0)
@@ -137,7 +131,6 @@ class ConfigPanel(QGroupBox):
 
     def load_settings(self):
         s = self.settings
-        self.steps_spin.setValue(int(s.value("max_steps", 15)))
         self.pause_spin.setValue(float(s.value("pause", 0.5)))
         self.settle_spin.setValue(float(s.value("settle", 1.0)))
         self.hide_cb.setChecked(s.value("hide", True, type=bool))
@@ -183,7 +176,6 @@ class ConfigPanel(QGroupBox):
 
     def save_settings(self):
         s = self.settings
-        s.setValue("max_steps", self.steps_spin.value())
         s.setValue("pause", self.pause_spin.value())
         s.setValue("settle", self.settle_spin.value())
         s.setValue("hide", self.hide_cb.isChecked())
@@ -193,7 +185,7 @@ class ConfigPanel(QGroupBox):
         s.setValue("remote_token", self.remote_token_edit.text().strip())
 
     def set_running(self, running: bool):
-        for w in (self.cfg_btn, self.steps_spin, self.pause_spin,
+        for w in (self.cfg_btn, self.pause_spin,
                   self.settle_spin, self.reasoning_combo, self.hide_cb,
                   self.target_mode_combo, self.remote_host_edit, self.remote_token_edit):
             w.setEnabled(not running)

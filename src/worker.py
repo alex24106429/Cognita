@@ -17,11 +17,10 @@ class AgentWorker(QObject):
     thought = pyqtSignal(str)
     action = pyqtSignal(str, str)
     screenshot = pyqtSignal(bytes)
-    step = pyqtSignal(int, int)
     status = pyqtSignal(str)
     finished = pyqtSignal(bool, str)
 
-    def __init__(self, api_key: str, model: str, goal: str, max_steps: int,
+    def __init__(self, api_key: str, model: str, goal: str,
                  action_pause: float, settle_pause: float,
                  base_url: str = None, provider: str = None,
                  reasoning_effort: str = "default",
@@ -33,7 +32,6 @@ class AgentWorker(QObject):
         self.provider = provider or "OpenRouter"
         self.reasoning_effort = reasoning_effort or "default"
         self.goal = goal
-        self.max_steps = max_steps
         self.action_pause = action_pause
         self.settle_pause = settle_pause
         self._abort = False
@@ -147,13 +145,14 @@ class AgentWorker(QObject):
                 {"role": "system", "content": self.system_prompt}]
             summary, success = "Loop ended without an explicit finish_task call.", False
 
-            for step in range(1, self.max_steps + 1):
+            step = 0
+            while True:
                 if self._abort:
                     summary = "Aborted by user."
                     break
 
-                self.step.emit(step, self.max_steps)
-                self.log.emit("step", f"--- Step {step}/{self.max_steps} ---")
+                step += 1
+                self.log.emit("step", f"--- Step {step} ---")
 
                 self.status.emit("Capturing screen…")
                 try:
