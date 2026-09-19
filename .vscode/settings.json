@@ -1,0 +1,13 @@
+{
+	"git.autofetch": true,
+	"git.confirmSync": false,
+	"git.enableSmartCommit": true,
+	"git.ignoreRebaseWarning": true,
+	"git.postCommitCommand": "sync",
+	"git.rebaseWhenSync": true,
+	"editor.formatOnSave": true,
+	"files.exclude": {
+		".venv": true,
+		"**/__pycache__": true,
+	}
+}

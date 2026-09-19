@@ -2,3 +2,5 @@ python-dotenv
 pyautogui
 pillow
 openai
+pyqt6
+pywhispercpp
