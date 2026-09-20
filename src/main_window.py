@@ -1,3 +1,4 @@
+import threading
 import time
 from PyQt6.QtCore import Qt, QThread, QTimer, pyqtSlot
 from PyQt6.QtWidgets import (
@@ -10,6 +11,8 @@ from config_panel import ConfigPanel
 from log_panel import LogPanel
 from preview_panel import PreviewPanel
 from api_setup_dialog import ApiSetupDialog, is_api_configured
+from tts_setup_dialog import TtsSetupDialog
+from tts import speak
 from worker import AgentWorker
 from device_bridge import LocalDeviceBridge, RemoteDeviceBridge
 
@@ -35,6 +38,7 @@ class MainWindow(QMainWindow):
 
         self.cfg_panel = ConfigPanel()
         self.cfg_panel.configure_api_requested.connect(self.open_api_setup)
+        self.cfg_panel.configure_tts_requested.connect(self.open_tts_setup)
         root.addWidget(self.cfg_panel)
 
         task_box = QGroupBox("Task")
@@ -92,6 +96,12 @@ class MainWindow(QMainWindow):
             if not is_api_configured():
                 self.statusBar().showMessage(
                     "API setup cancelled — agent cannot run until configured.")
+
+    def open_tts_setup(self):
+        dialog = TtsSetupDialog(self)
+        if dialog.exec():
+            self.cfg_panel.refresh_tts_info()
+            self.statusBar().showMessage("TTS configuration updated.")
 
     def start_agent(self):
         if self.thread:
@@ -189,8 +199,12 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(bool, str)
     def on_finished(self, success: bool, summary: str):
-		if success:
-			threading.Thread(target=speak, args=(summary,), daemon=True).start()
+        if success:
+            s = self.cfg_panel.settings
+            if s.value("tts_enabled", True, type=bool):
+                threading.Thread(target=speak, args=(
+                    summary,), daemon=True).start()
+
         self.log_panel.append_log(
             "info" if success else "warn", (
                 "✅ DONE — " if success else "⏹ ENDED — ") + summary

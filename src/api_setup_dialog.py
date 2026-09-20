@@ -423,12 +423,18 @@ class ApiSetupDialog(QDialog):
         if not chosen_model:
             return
 
+        key_to_save = self.verified_api_key or self.key_edit.text().strip()
+        base_url_to_save = self.verified_base_url or self.url_edit.text().strip()
+
         s = self.settings
         s.setValue("provider", self.selected_provider)
-        s.setValue(
-            "base_url", self.verified_base_url or self.url_edit.text().strip())
-        s.setValue(
-            "api_key", self.verified_api_key or self.key_edit.text().strip())
+        s.setValue("base_url", base_url_to_save)
+        s.setValue("api_key", key_to_save)
         s.setValue("model", chosen_model)
+
+        # Store provider-specific key to enable seamless reuse by TTS
+        if key_to_save:
+            s.setValue(
+                f"{self.selected_provider.lower()}_api_key", key_to_save)
 
         self.accept()

@@ -18,6 +18,7 @@ from api_setup_dialog import is_api_configured
 
 class ConfigPanel(QGroupBox):
     configure_api_requested = pyqtSignal()
+    configure_tts_requested = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__("Settings", parent)
@@ -30,7 +31,7 @@ class ConfigPanel(QGroupBox):
         layout.setHorizontalSpacing(12)
         layout.setVerticalSpacing(8)
 
-        # Row 0: Active API status display & Configure button
+        # Row 0: Active API status display & Configure buttons
         badge_container = QWidget()
         badge_layout = QHBoxLayout(badge_container)
         badge_layout.setContentsMargins(0, 0, 0, 0)
@@ -53,7 +54,14 @@ class ConfigPanel(QGroupBox):
         self.cfg_btn = QPushButton("⚙ Configure API…")
         self.cfg_btn.setObjectName("configureBtn")
         self.cfg_btn.clicked.connect(self.configure_api_requested.emit)
-        layout.addWidget(self.cfg_btn, 0, 4, 1, 2)
+        layout.addWidget(self.cfg_btn, 0, 4, 1, 1)
+
+        self.tts_btn = QPushButton("🔊 Voice / TTS…")
+        self.tts_btn.setObjectName("ttsBtn")
+        self.tts_btn.setToolTip(
+            "Configure Text-to-Speech voice engine and audio announcements")
+        self.tts_btn.clicked.connect(self.configure_tts_requested.emit)
+        layout.addWidget(self.tts_btn, 0, 5, 1, 1)
 
         # Row 1: Execution parameters (pauses)
         layout.addWidget(QLabel("Action pause (s):"), 1, 0)
@@ -147,6 +155,7 @@ class ConfigPanel(QGroupBox):
             self.reasoning_combo.setCurrentText(DEFAULT_REASONING_EFFORT)
 
         self.refresh_api_info()
+        self.refresh_tts_info()
 
     def refresh_api_info(self):
         s = self.settings
@@ -172,6 +181,16 @@ class ConfigPanel(QGroupBox):
                 "<span style='color:#ff6b6b;'>⚠️ API not configured. Please click 'Configure API' to begin.</span>"
             )
 
+    def refresh_tts_info(self):
+        s = self.settings
+        enabled = s.value("tts_enabled", True, type=bool)
+        provider = s.value("tts_provider", "supertonic")
+        voice = s.value("tts_voice", "M4")
+        status = "Enabled" if enabled else "Disabled"
+        self.tts_btn.setToolTip(
+            f"Voice Output: {status}\nProvider: {provider}\nVoice: {voice}"
+        )
+
     def save_settings(self):
         s = self.settings
         s.setValue("pause", self.pause_spin.value())
@@ -183,7 +202,7 @@ class ConfigPanel(QGroupBox):
         s.setValue("remote_token", self.remote_token_edit.text().strip())
 
     def set_running(self, running: bool):
-        for w in (self.cfg_btn, self.pause_spin,
+        for w in (self.cfg_btn, self.tts_btn, self.pause_spin,
                   self.settle_spin, self.reasoning_combo, self.hide_cb,
                   self.target_mode_combo, self.remote_host_edit, self.remote_token_edit):
             w.setEnabled(not running)

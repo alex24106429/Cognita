@@ -21,6 +21,8 @@ APP_STYLESHEET = """
     QPushButton#stopBtn:hover { background: #a3363f; }
     QPushButton#configureBtn { background: #4b5bd6; border-color: #5d6de6; font-weight: 600; }
     QPushButton#configureBtn:hover { background: #5a6ae6; }
+    QPushButton#ttsBtn { background: #40346e; border-color: #59489c; font-weight: 600; }
+    QPushButton#ttsBtn:hover { background: #4e3f87; }
     QPushButton#providerSelectBtn {
         background: #262833; border: 1px solid #3a3d4a;
         border-radius: 6px; text-align: left;

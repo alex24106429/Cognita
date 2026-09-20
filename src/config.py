@@ -112,6 +112,71 @@ REASONING_EFFORTS = ["default", "none", "minimal",
                      "low", "medium", "high", "xhigh", "max"]
 DEFAULT_REASONING_EFFORT = "default"
 
+# TTS Configuration Definitions
+TTS_PROVIDERS = {
+    "supertonic": {
+        "label": "Supertonic-3 (Local)",
+        "description": "On-device fast neural TTS (No API key needed)",
+        "models": ["supertonic-3"],
+        "default_model": "supertonic-3",
+        "voices": ["F1", "F2", "F3", "F4", "F5", "M1", "M2", "M3", "M4", "M5"],
+        "default_voice": "M4",
+        "key_required": False,
+    },
+    "openrouter": {
+        "label": "OpenRouter (Deepgram Flux)",
+        "description": "Deepgram Flux TTS via OpenRouter (Reuses OpenRouter API key)",
+        "models": ["deepgram/flux-tts:free"],
+        "default_model": "deepgram/flux-tts:free",
+        "voices": [
+            "flux-alexis-en", "flux-bree-en", "flux-brittany-en", "flux-brooke-en",
+            "flux-bruce-en", "flux-cliff-en", "flux-cole-en", "flux-colin-en",
+            "flux-conor-en", "flux-donovan-en", "flux-drew-en", "flux-elise-en",
+            "flux-gemma-en", "flux-haley-en", "flux-hannah-en", "flux-heather-en",
+            "flux-jack-en", "flux-kai-en", "flux-kelsey-en", "flux-kit-en",
+            "flux-maeve-en", "flux-marcelo-en", "flux-marcus-en", "flux-meena-en",
+            "flux-meghan-en", "flux-miles-en", "flux-naveen-en", "flux-paige-en",
+            "flux-priya-en", "flux-rufus-en", "flux-sean-en", "flux-sharon-en",
+            "flux-sienna-en", "flux-tanner-en", "flux-wade-en", "flux-wes-en"
+        ],
+        "default_voice": "flux-alexis-en",
+        "key_required": True,
+    },
+    "openai": {
+        "label": "OpenAI",
+        "description": "OpenAI Text-to-Speech (Reuses OpenAI API key)",
+        "models": ["tts-1", "tts-1-hd", "gpt-4o-mini-tts"],
+        "default_model": "tts-1",
+        "voices": [
+            "alloy", "ash", "ballad", "coral", "echo", "fable",
+            "onyx", "nova", "sage", "shimmer", "verse", "marin", "cedar"
+        ],
+        "default_voice": "alloy",
+        "key_required": True,
+    },
+    "elevenlabs": {
+        "label": "ElevenLabs",
+        "description": "Realistic voice synthesis with multilingual models",
+        "models": ["eleven_multilingual_v2", "eleven_turbo_v2_5", "eleven_monolingual_v1"],
+        "default_model": "eleven_multilingual_v2",
+        "voices": [
+            "Rachel (21m00Tcm4TlvDq8ikWAM)",
+            "George (JBFqnCBsd6RMkjVDRZzb)",
+            "Adam (pNInz6obpgDQGcFmaJgB)",
+            "Antoni (ErXwobaYiN019PkySvjV)",
+            "Bella (EXAVITQu4vr4xnSDxMaL)",
+            "Brian (nPczCjzI2devNBz1zQrb)",
+            "Charlie (IKne3meq5aSn9XLyUdCD)",
+            "Daniel (onwK4e9ZLuTAKqWW03F9)",
+            "Emily (LcfcDJNUP1GQjkzn1xUU)",
+            "Custom Voice ID…",
+        ],
+        "default_voice": "Rachel (21m00Tcm4TlvDq8ikWAM)",
+        "key_required": True,
+    },
+}
+DEFAULT_TTS_PROVIDER = "supertonic"
+
 BASE_SYSTEM_PROMPT = (
     "You are an autonomous computer-use agent. "
     "You operate the desktop by observing screenshots and calling mouse/keyboard tools.\n"

@@ -6,3 +6,4 @@ pyqt6
 pywhispercpp
 requests
 supertonic
+sounddevice
