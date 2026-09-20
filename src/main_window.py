@@ -189,6 +189,8 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(bool, str)
     def on_finished(self, success: bool, summary: str):
+		if success:
+			threading.Thread(target=speak, args=(summary,), daemon=True).start()
         self.log_panel.append_log(
             "info" if success else "warn", (
                 "✅ DONE — " if success else "⏹ ENDED — ") + summary

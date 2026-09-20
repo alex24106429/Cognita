@@ -10,3 +10,6 @@ whisper_bin/
 *.bin
 *.tar.gz
 *.wav
+
+# TTS
+tts_model/
