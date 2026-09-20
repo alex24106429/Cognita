@@ -12,13 +12,14 @@ try:
 except ImportError:
     pass
 
-from config import PROVIDERS, REASONING_EFFORTS, DEFAULT_REASONING_EFFORT
+from config import PROVIDERS, REASONING_EFFORTS, DEFAULT_REASONING_EFFORT, load_vault
 from api_setup_dialog import is_api_configured
 
 
 class ConfigPanel(QGroupBox):
     configure_api_requested = pyqtSignal()
     configure_tts_requested = pyqtSignal()
+    configure_vault_requested = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__("Settings", parent)
@@ -49,14 +50,21 @@ class ConfigPanel(QGroupBox):
         badge_layout.addWidget(self.api_badge)
         badge_layout.addStretch()
 
-        layout.addWidget(badge_container, 0, 0, 1, 4)
+        layout.addWidget(badge_container, 0, 0, 1, 3)
 
-        self.cfg_btn = QPushButton("⚙ Configure API…")
+        self.vault_btn = QPushButton("👤 User Data")
+        self.vault_btn.setObjectName("vaultBtn")
+        self.vault_btn.setToolTip(
+            "Configure user profile, identity, and personal records for automated forms (data/vault.json)")
+        self.vault_btn.clicked.connect(self.configure_vault_requested.emit)
+        layout.addWidget(self.vault_btn, 0, 3, 1, 1)
+
+        self.cfg_btn = QPushButton("⚙ Configure API")
         self.cfg_btn.setObjectName("configureBtn")
         self.cfg_btn.clicked.connect(self.configure_api_requested.emit)
         layout.addWidget(self.cfg_btn, 0, 4, 1, 1)
 
-        self.tts_btn = QPushButton("🔊 Voice / TTS…")
+        self.tts_btn = QPushButton("🔊 Text-to-Speech")
         self.tts_btn.setObjectName("ttsBtn")
         self.tts_btn.setToolTip(
             "Configure Text-to-Speech voice engine and audio announcements")
@@ -156,6 +164,7 @@ class ConfigPanel(QGroupBox):
 
         self.refresh_api_info()
         self.refresh_tts_info()
+        self.refresh_vault_info()
 
     def refresh_api_info(self):
         s = self.settings
@@ -191,6 +200,18 @@ class ConfigPanel(QGroupBox):
             f"Voice Output: {status}\nProvider: {provider}\nVoice: {voice}"
         )
 
+    def refresh_vault_info(self):
+        vault = load_vault()
+        if vault:
+            count = len(vault)
+            self.vault_btn.setToolTip(
+                f"User Data: Configured ({count} sections)\nClick to edit data/vault.json"
+            )
+        else:
+            self.vault_btn.setToolTip(
+                "User Data: Not configured\nClick to set up personal profile in data/vault.json"
+            )
+
     def save_settings(self):
         s = self.settings
         s.setValue("pause", self.pause_spin.value())
@@ -202,7 +223,7 @@ class ConfigPanel(QGroupBox):
         s.setValue("remote_token", self.remote_token_edit.text().strip())
 
     def set_running(self, running: bool):
-        for w in (self.cfg_btn, self.tts_btn, self.pause_spin,
+        for w in (self.cfg_btn, self.tts_btn, self.vault_btn, self.pause_spin,
                   self.settle_spin, self.reasoning_combo, self.hide_cb,
                   self.target_mode_combo, self.remote_host_edit, self.remote_token_edit):
             w.setEnabled(not running)

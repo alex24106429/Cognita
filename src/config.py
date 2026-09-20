@@ -29,6 +29,14 @@ def load_vault() -> dict | None:
     return None
 
 
+def save_vault(vault: dict) -> Path:
+    """Saves user profile and vault dictionary to data/vault.json."""
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    with open(VAULT_PATH, "w", encoding="utf-8") as f:
+        json.dump(vault, f, indent=2, ensure_ascii=False)
+    return VAULT_PATH
+
+
 PROVIDERS = {
     "OpenRouter": {
         "base_url": "https://openrouter.ai/api/v1",
@@ -112,7 +120,6 @@ REASONING_EFFORTS = ["default", "none", "minimal",
                      "low", "medium", "high", "xhigh", "max"]
 DEFAULT_REASONING_EFFORT = "default"
 
-# TTS Configuration Definitions
 TTS_PROVIDERS = {
     "supertonic": {
         "label": "Supertonic-3 (Local)",
@@ -199,7 +206,7 @@ def build_system_prompt(vault: dict | None = None) -> str:
     vault_json_str = json.dumps(vault, indent=2, ensure_ascii=False)
     return (
         f"{BASE_SYSTEM_PROMPT}\n\n"
-        "User Profile & Vault Data:\n"
+        "User Data:\n"
         "You have access to the user's verified personal profile and records provided below. "
         "When performing tasks on behalf of the user (such as filling out forms, applications, "
         "or entering user details), reference and use this information accurately whenever relevant "

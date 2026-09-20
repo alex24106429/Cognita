@@ -12,6 +12,7 @@ from log_panel import LogPanel
 from preview_panel import PreviewPanel
 from api_setup_dialog import ApiSetupDialog, is_api_configured
 from tts_setup_dialog import TtsSetupDialog
+from vault_setup_dialog import VaultSetupDialog
 from tts import speak
 from worker import AgentWorker
 from device_bridge import LocalDeviceBridge, RemoteDeviceBridge
@@ -39,6 +40,7 @@ class MainWindow(QMainWindow):
         self.cfg_panel = ConfigPanel()
         self.cfg_panel.configure_api_requested.connect(self.open_api_setup)
         self.cfg_panel.configure_tts_requested.connect(self.open_tts_setup)
+        self.cfg_panel.configure_vault_requested.connect(self.open_vault_setup)
         root.addWidget(self.cfg_panel)
 
         task_box = QGroupBox("Task")
@@ -103,6 +105,12 @@ class MainWindow(QMainWindow):
             self.cfg_panel.refresh_tts_info()
             self.statusBar().showMessage("TTS configuration updated.")
 
+    def open_vault_setup(self):
+        dialog = VaultSetupDialog(self)
+        if dialog.exec():
+            self.cfg_panel.refresh_vault_info()
+            self.statusBar().showMessage("User vault saved (data/vault.json).")
+
     def start_agent(self):
         if self.thread:
             return
@@ -145,7 +153,6 @@ class MainWindow(QMainWindow):
         provider = s.value("provider", "")
         reasoning_effort = self.cfg_panel.reasoning_combo.currentText()
 
-        # Construct appropriate Device Bridge
         if is_remote:
             host_port = self.cfg_panel.remote_host_edit.text().strip()
             token = self.cfg_panel.remote_token_edit.text().strip()
