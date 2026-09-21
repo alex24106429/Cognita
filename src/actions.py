@@ -19,7 +19,7 @@ def execute_tool(name: str, args: dict, screen_w: int, screen_h: int,
     if name == "mouse_click":
         x, y = to_screen_coords(args["x"], args["y"], screen_w, screen_h)
         button = args.get("button", "left")
-        pyautogui.moveTo(x, y, duration=0.1)
+        pyautogui.moveTo(x, y, duration=0)
         if button == "double":
             pyautogui.doubleClick()
         elif button == "right":
@@ -30,12 +30,12 @@ def execute_tool(name: str, args: dict, screen_w: int, screen_h: int,
 
     if name == "click_and_type":
         x, y = to_screen_coords(args["x"], args["y"], screen_w, screen_h)
-        pyautogui.moveTo(x, y, duration=0.1)
+        pyautogui.moveTo(x, y, duration=0)
         pyautogui.click()
 
         text = args["text"]
 
-        pyautogui.write(text, interval=0.01)
+        pyautogui.write(text, interval=0.001)
 
         if args.get("press_enter"):
             pyautogui.press("enter")
@@ -45,10 +45,10 @@ def execute_tool(name: str, args: dict, screen_w: int, screen_h: int,
         # If no coordinates provided, move mouse to safe screen center to avoid scrolling inside textareas
         if "x" in args and "y" in args and args["x"] is not None and args["y"] is not None:
             x, y = to_screen_coords(args["x"], args["y"], screen_w, screen_h)
-            pyautogui.moveTo(x, y, duration=0.1)
+            pyautogui.moveTo(x, y, duration=0)
             loc_str = f" at screen ({x}, {y})"
         else:
-            pyautogui.moveTo(screen_w // 2, screen_h // 2, duration=0.1)
+            pyautogui.moveTo(screen_w // 2, screen_h // 2, duration=0)
             loc_str = " at center viewport"
 
         direction = str(args.get("direction", "down")).lower()
@@ -69,7 +69,7 @@ def execute_tool(name: str, args: dict, screen_w: int, screen_h: int,
 
     if name == "type_text":
         text = args["text"]
-        pyautogui.write(text, interval=0.03)
+        pyautogui.write(text, interval=0.01)
         if args.get("press_enter"):
             pyautogui.press("enter")
         return f"Typed '{text}' (press_enter={args.get('press_enter', False)})."

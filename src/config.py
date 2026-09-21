@@ -192,7 +192,8 @@ BASE_SYSTEM_PROMPT = (
     "(top-left is [0, 0], bottom-right is [1000, 1000]).\n"
     "2. Look closely at the latest screenshot to verify if your previous action succeeded.\n"
     "3. Use 'click_and_type' whenever possible to click an input field and enter text in a single step.\n"
-    "4. When the goal is completed, call 'finish_task'."
+    "4. When the goal is completed, call 'finish_task'.\n"
+    "When multiple input fields are visible and filling them does not alter the layout, output an array of sequential actions in a single turn."
 )
 
 
