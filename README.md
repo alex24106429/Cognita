@@ -2,733 +2,630 @@
 
 **AI for Good — Hackathon 3: Equal Access**
 
-- **SDG:** SDG 10 — Reduced Inequalities
-- **SDG Target:** 10.2 — Promote inclusion irrespective of disability
-- **Programming language:** Python
-- **Team:** Arbër & Alex
-- **Status:** Proof of Concept / Prototype in development
+Cognita is a Python desktop assistant that uses a live LLM API, screenshots and computer-control tools to reduce the amount of precise mouse movement and repetitive keyboard input needed to complete desktop tasks.
 
-### Current AI stack
+| | |
+|---|---|
+| **Assigned SDG** | SDG 10 — Reduced Inequalities |
+| **Relevant target** | SDG 10.2 — promote social, economic and political inclusion irrespective of disability |
+| **Language** | Python |
+| **Team** | Arbër & Alex |
+| **Status** | Working prototype — typed-input computer-use flow implemented; voice input is still experimental |
 
-- **Computer-use AI:** Nex-N2.5-Pro through OpenRouter
-- **Speech-to-text:** Whisper Large V3 Turbo Q5 (`large-v3-turbo-q5_0`) through whisper.cpp — planned / testing
-- **Text-to-speech:** Deepgram Flux TTS (`deepgram/flux-tts:free`) through OpenRouter — planned / testing
-
-> The project is still a proof of concept. Models and implementation choices may change during development if testing shows that another option works better.
-
----
-
-## What is Cognita?
-
-Cognita is an **AI-powered desktop assistant** that helps people interact with their computer using natural language instead of requiring precise mouse and keyboard actions.
-
-Users can give Cognita instructions in two ways:
-
-1. **Typed commands**
-2. **Spoken commands**
-
-For example:
-
-```text
-Open Notepad and type "My appointment is tomorrow at 10."
-```
-
-Cognita looks at the current screen, understands the goal, decides which actions are required, controls the mouse and keyboard and checks whether the task was completed.
-
-The planned voice mode will also allow Cognita to speak back to the user using text-to-speech.
+> **Hackathon assessment configuration:** Cognita supports several LLM providers, but for the final Hackathon 3 demo we should use the **direct Anthropic Claude API**. Claude is explicitly listed in the assignment and is called live from our own Python code. Other providers are optional extensions and are not needed as evidence for the knockout criterion.
 
 ---
 
 ## 1. Problem Definition
 
-Most computer interfaces still depend heavily on mouse and keyboard interaction.
+Many computer tasks still require accurate mouse movement, clicking small interface elements and repeated typing. This can create a practical barrier for people with **physical or motor impairments**, including users with tremors, reduced fine-motor control, limited hand or arm movement, paralysis, or fatigue that makes prolonged mouse and keyboard use difficult.
 
-This can create barriers for people with **physical or motor impairments**, for example people with:
+This is not a small accessibility issue:
 
-- limited hand or arm movement;
-- tremors;
+- The **World Health Organization (WHO)** estimates that more than **1.3 billion people**, around **16% of the global population**, live with significant disability.
+- The **W3C Web Accessibility Initiative (WAI)** explains that people with physical disabilities may have difficulty clicking small targets, may make more typing or clicking errors, and may rely on alternative input methods such as speech recognition, switches or other hands-free interaction.
+- The **WebAIM Million 2026** study detected WCAG 2 failures on **95.9% of one million tested home pages**. It also found missing form input labels on **51%** of the tested home pages. Automated testing cannot detect every accessibility problem, but these results show that accessibility barriers remain common in digital interfaces.
+
+Cognita focuses on one specific part of this broader problem:
+
+> **A person may understand exactly what they want to do on a computer, but precise mouse navigation and repetitive form entry can still be physically difficult.**
+
+Instead of asking the user to manually perform every click and keystroke, Cognita lets the user describe the goal in natural language and lets the AI perform the interaction step by step.
+
+### Context and example
+
+A multi-step online form may require a user to click many small fields, enter the same personal information repeatedly, scroll through the page and select several options. For a user with hand tremors or severely limited fine-motor control, this can require substantially more effort than understanding the form itself.
+
+For our hackathon demo, the repository contains a **local Wmo practice application form** (`demos/form1.html`) and a synthetic example user profile. This gives us a realistic but safe environment for demonstrating how Cognita can fill a complex form without using a real government service or real personal data.
+
+---
+
+## 2. Intended User Group
+
+### Primary user
+
+The current prototype is designed for:
+
+> **People with physical or motor impairments who can provide a short typed natural-language instruction, but who have difficulty with precise mouse navigation and/or repetitive keyboard input.**
+
+Examples include users who experience:
+
+- hand tremors;
 - reduced fine-motor control;
-- paralysis;
-- conditions that make prolonged mouse or keyboard use difficult.
+- limited hand or arm movement;
+- muscle weakness;
+- difficulty clicking small interface elements;
+- fatigue from repetitive mouse and keyboard use.
 
-The **World Health Organization (WHO)** estimates that approximately **1.3 billion people**, or around **16% of the global population**, experience significant disability.
-
-Digital accessibility problems are also still common. The **WebAIM Million 2026** study found automatically detectable WCAG failures on **95.9% of one million tested homepages**.
-
-Cognita focuses on one specific problem:
-
-> **Some users know exactly what they want to do on a computer, but physically operating the interface can be difficult.**
-
-Cognita aims to reduce the amount of precise mouse and keyboard interaction required.
-
----
-
-## 2. Target User
-
-Our primary target group is:
-
-> **People with physical or motor impairments who experience difficulty using a conventional mouse and/or keyboard.**
-
-The user does not have to use voice.
-
-Cognita supports both **typed and spoken instructions**, depending on what is most accessible for that user.
-
-### Typed input
-
-A user who can type but has difficulty navigating with a mouse could enter:
+The current workflow is especially relevant when the user can type a short instruction such as:
 
 ```text
-Open Chrome and search for THUAS.
+Fill in this practice Wmo form using my saved user data. Stop before final submission.
 ```
 
-### Voice input
+Cognita can then perform the more repetitive interaction itself.
 
-A user who has difficulty using both the mouse and keyboard could say:
+### Conditions of use
 
-```text
-Open Chrome and search for THUAS.
-```
+The current prototype assumes that:
 
-Both methods eventually produce the same natural-language task for the computer-use AI.
+- the user can understand and describe the task they want completed;
+- the computer has a graphical desktop environment;
+- an internet connection is available when a cloud LLM is used;
+- the user supervises the agent and can stop it if necessary;
+- real sensitive or safety-critical tasks are not performed without additional safeguards.
 
----
+### Who is currently outside the main scope?
 
-### Who is not the target user?
+Cognita does **not** currently claim to fully support:
 
-Cognita is currently not intended to:
+- users who cannot provide typed input at all, because speech-to-text is not yet integrated into the main application;
+- blind or low-vision users who require a properly tested screen-reader-first workflow;
+- users who need medical diagnosis or treatment advice;
+- safety-critical computer systems;
+- unsupervised high-impact actions such as financial transactions, legal submissions or deletion of important files.
 
-- diagnose or treat disabilities;
-- replace professional assistive technology;
-- operate safety-critical systems;
-- perform important actions without user supervision.
-
-Blind or low-vision users could potentially benefit from future voice and text-to-speech features, but they are **not the primary target group of the current prototype**.
-
-Supporting these users properly would require additional accessibility features and testing.
+A standalone Whisper experiment exists in `src/whisper.py`, but it is **not part of the end-to-end working prototype yet**. Future speech input could extend Cognita to users who cannot comfortably type even short commands.
 
 ---
 
 ## 3. SDG 10 — Reduced Inequalities
 
-Cognita addresses **SDG 10: Reduced Inequalities**, especially **Target 10.2**, which promotes inclusion irrespective of characteristics including disability.
+Cognita addresses **SDG 10: Reduced Inequalities**, especially **Target 10.2**.
 
-Giving everyone access to the same computer does not automatically mean everyone can interact with it equally.
+The United Nations describes Target 10.2 as promoting the social, economic and political inclusion of all, irrespective of characteristics including **disability**.
 
-Someone who has difficulty operating a mouse or keyboard may experience an additional barrier when using digital services.
+Cognita connects to this target through digital participation. Access to a computer or website does not automatically mean equal ability to operate it. If a service depends on repeated clicking and typing, users with motor impairments can face an additional interaction barrier.
 
-Cognita provides an alternative interaction method:
+Cognita attempts to reduce that barrier by moving part of the physical interaction from the user to an AI-controlled agent:
 
 ```text
-Typed command
-      OR
-Spoken command
-       ↓
-       AI
-       ↓
+User goal
+   ↓
+Live LLM API
+   ↓
 Screen understanding
-       ↓
-Computer action
+   ↓
+Mouse / keyboard / scroll actions
+   ↓
+New screenshot
+   ↓
+Result verification
 ```
 
-The goal is to reduce one digital accessibility barrier for people with motor impairments.
+The goal is **not** to solve disability or replace professional assistive technology. The goal is narrower: reduce the amount of precise physical desktop interaction required for selected computer tasks.
 
 ---
 
-## 4. How Cognita Works
+## 4. What We Built
 
-Cognita has three main AI components.
+Cognita is a **PyQt6 desktop application** with an autonomous observe → reason → act → verify loop.
 
-### A. Computer-use AI
+The current application includes:
 
-The main Cognita agent currently uses:
+- a graphical desktop interface;
+- live LLM API configuration;
+- screenshot capture;
+- vision-capable LLM input;
+- LLM function/tool calling;
+- mouse clicking;
+- combined click-and-type actions;
+- keyboard typing;
+- keyboard shortcuts;
+- mouse scrolling;
+- wait actions for loading interfaces;
+- repeated screen inspection after actions;
+- a visible execution log;
+- a screenshot preview;
+- a Stop button;
+- the PyAutoGUI emergency fail-safe;
+- a user-data vault for form-filling tasks;
+- optional text-to-speech feedback after successful completion;
+- optional local or remote target-device control.
+
+### Main application flow
 
 ```text
-Nex-N2.5-Pro
-via OpenRouter
+1. User enters a natural-language goal
+                    ↓
+2. Cognita captures the current screen
+                    ↓
+3. Python sends the goal + screenshot + tool definitions to the LLM API
+                    ↓
+4. The LLM interprets the screen and selects a tool call
+                    ↓
+5. Cognita executes the requested mouse / keyboard / scroll action
+                    ↓
+6. Cognita captures a new screenshot
+                    ↓
+7. The LLM checks the new screen and decides what to do next
+                    ↓
+8. The loop repeats until the model calls finish_task or the run is stopped
+                    ↓
+9. Cognita shows the result and can optionally speak the completion summary
 ```
 
-This AI receives:
+---
+
+## 5. Where the Required AI API Is Used
+
+The LLM API is a necessary part of Cognita's core functionality.
+
+Each iteration sends the model:
 
 - the user's task;
-- screenshots of the current computer screen;
-- available computer-control tools.
+- the current screenshot;
+- the system instructions;
+- the available computer-control tool definitions;
+- previous actions and results.
 
-It then decides which action should happen next.
+The model then decides which tool should be used next and supplies the arguments for that action.
 
-The current process is:
-
-```text
-User instruction
-       ↓
-Python
-       ↓
-Screenshot
-       ↓
-Nex-N2.5-Pro
-       ↓
-Understand screen + task
-       ↓
-Choose computer action
-       ↓
-PyAutoGUI
-       ↓
-Mouse / keyboard action
-       ↓
-New screenshot
-       ↓
-AI verifies result
-       ↓
-Repeat until completed
-```
-
----
-
-### B. Speech-to-text
-
-For voice input, we currently plan to test:
-
-```text
-OpenAI Whisper Large V3 Turbo Q5
-large-v3-turbo-q5_0
-through whisper.cpp
-```
-
-Unlike our main computer-use model, Whisper will run **locally on the computer**.
-
-The planned flow is:
-
-```text
-Microphone
-    ↓
-Local Whisper
-    ↓
-Speech-to-text
-    ↓
-"Open Notepad and type hello"
-    ↓
-Cognita computer agent
-```
-
-This means that the user's microphone recording does not need to be sent to an external speech-to-text API.
-
-We selected the Q5 quantized version first because it is significantly smaller than the full model while still using the Large V3 Turbo architecture.
-
-We will test its speed and transcription quality on our own hardware before deciding whether it remains the final model.
-
----
-
-### C. Text-to-speech
-
-For spoken feedback, we currently plan to test:
-
-```text
-Deepgram Flux TTS
-deepgram/flux-tts:free
-through OpenRouter
-```
-
-This can allow Cognita to speak short status messages back to the user.
-
-For example:
-
-```text
-Cognita:
-"Starting your task."
-```
-
-and after completion:
-
-```text
-Cognita:
-"Done. Notepad is open and your message has been typed."
-```
-
-The detailed technical logs can still remain visible in the terminal.
-
-TTS should only provide useful, short feedback instead of reading every technical action aloud.
-
----
-
-## 5. Intended Final Flow
-
-With all three components combined, Cognita could work like this:
-
-```text
-                    ┌── Typed command ──────────┐
-                    │                           │
-User ────────────────┤                           ├──→ Cognita task
-                    │                           │
-                    └── Voice command           │
-                          ↓                     │
-                    Local Whisper               │
-                          ↓                     │
-                    Speech-to-text ─────────────┘
-                              ↓
-                    Nex-N2.5-Pro
-                              ↓
-                    Screen understanding
-                              ↓
-                    Computer actions
-                              ↓
-                    Result verification
-                              ↓
-                    Task completed
-                              ↓
-                    Deepgram Flux TTS
-                              ↓
-                    Spoken confirmation
-```
-
-Typed input remains available even after voice input is added.
-
----
-
-## 6. Why AI Is Necessary
-
-A normal automation script could use fixed instructions such as:
-
-```python
-click(100, 200)
-type("notepad")
-press("enter")
-```
-
-But this only works when the interface always looks exactly the same.
-
-Cognita needs to understand:
-
-- what is currently visible;
-- what the user wants;
-- where applications and buttons are;
-- whether an action succeeded;
-- what action should happen next.
-
-The AI can currently select tools such as:
+Examples of available tools are:
 
 ```text
 mouse_click
+click_and_type
+mouse_scroll
 type_text
 press_hotkey
 wait
 finish_task
 ```
 
-Without the computer-use AI, Cognita would only be a fixed automation script.
+The tool execution itself is performed by Python/PyAutoGUI. The LLM is responsible for **interpreting the changing screen, deciding what action is appropriate and determining when the requested task is complete**.
+
+### Why Cognita would not work the same way without the LLM
+
+A fixed automation could contain instructions such as:
+
+```python
+click(300, 450)
+type("Marloes")
+press("tab")
+```
+
+That approach only works if the interface always appears in exactly the same location and order.
+
+Cognita instead re-observes the screen after actions. The LLM can adapt its next action to what is currently visible. Removing the LLM would remove the screen interpretation and adaptive decision-making that make Cognita a general computer-use assistant rather than a hard-coded macro.
 
 ---
 
-## 7. Why the Solution Fits the Problem
+## 6. Meaningful User Scenario: Accessible Form Filling
 
-The problem is:
-
-> **A user has difficulty physically interacting with a computer interface.**
-
-The solution is:
-
-> **The user explains their goal using text or voice, and Cognita performs the required mouse and keyboard interaction.**
-
-The user can choose whichever input method is more accessible.
-
-For example:
+To connect the technical prototype to a realistic accessibility problem, we built a local multi-step **Wmo practice application form** in:
 
 ```text
-Typed:
-"Open Notepad."
+demos/form1.html
 ```
 
-or:
+The form contains multiple stages, including:
+
+1. personal details;
+2. disability and functional-limitation information;
+3. requested support/provisions;
+4. a confirmation screen.
+
+Cognita also includes a **User Data** interface. The data entered there is stored locally in:
 
 ```text
-Spoken:
-"Open Notepad."
+data/vault.json
 ```
 
-Both produce the same task for Cognita.
+When an agent run begins, the saved user data is added to the agent context. This allows the agent to use the information while interacting with a form.
 
-The AI therefore performs the interaction that may be physically difficult for the intended user.
+The repository includes a **synthetic example profile** for testing. It contains fictional identity, living-situation, medical and Wmo-related information so that the workflow can be demonstrated without using a real person's data.
+
+### Recommended demo task
+
+1. Open the local Wmo practice form in a browser.
+2. In Cognita, load the synthetic example profile through **User Data**.
+3. Enter:
+
+```text
+Fill in this practice Wmo form using my saved user data. Stop on the confirmation page and do not submit it.
+```
+
+4. Run the agent.
+5. Show that Cognita reads the current screen, fills fields, selects options, scrolls when needed and re-checks the screen after actions.
+6. Stop before the final submission action.
+
+This scenario is more representative of Cognita's intended purpose than a generic application-launch test because it demonstrates a task where repeated mouse and keyboard interaction is directly relevant to the target user's accessibility needs.
+
+---
+
+## 7. Problem–Solution Fit
+
+The problem is not that the intended user does not understand what a computer task means. The barrier we focus on is the **physical interaction required to carry it out**.
+
+Cognita therefore lets the user express the goal at a higher level:
+
+```text
+"Fill in this practice form using my saved information."
+```
+
+instead of requiring the user to manually perform every individual action.
+
+A simpler fixed macro is not enough for this use case because desktop interfaces can change due to:
+
+- window position;
+- screen resolution;
+- different page content;
+- loading delays;
+- scrolling;
+- changed button or field positions;
+- unexpected dialogs.
+
+Cognita observes the current state after each action and lets the LLM choose the next step from the new screenshot. This adaptive loop is the reason an LLM-based computer-use approach is relevant to the problem.
 
 ---
 
 ## 8. Working Prototype
 
-The current prototype already works end-to-end using **typed natural-language input**.
+### Implemented in the current application
 
-### Currently implemented
-
-- [x] Python application
-- [x] Live AI API calls
-- [x] Nex-N2.5-Pro through OpenRouter
-- [x] Natural-language text input
-- [x] Screenshot capture
-- [x] AI vision input
-- [x] AI function/tool calling
-- [x] Mouse control
-- [x] Keyboard control
-- [x] Screen verification after actions
-- [x] Maximum step limit
-- [x] PyAutoGUI emergency failsafe
-- [x] End-to-end computer-control test
-- [ ] Local Whisper voice input
-- [ ] Microphone recording
-- [ ] Deepgram Flux TTS output
-- [ ] Confirmation before sensitive actions
-- [ ] Accessibility-focused final demo
-
----
-
-### Technical test
-
-During development we tested Cognita with:
-
-```text
-Please run League of Legends and click Play on the Riot Client so it opens the game itself.
-```
-
-Cognita successfully:
-
-1. inspected the screen;
-2. opened Windows Search;
-3. searched for League of Legends;
-4. opened the Riot Client;
-5. located the Play button;
-6. clicked Play;
-7. waited for the program to start;
-8. inspected the screen again;
-9. confirmed that the requested task was complete.
-
-The terminal returned:
-
-```text
-[DONE] Task Completed: Launched League of Legends from Windows,
-clicked Play in the Riot Client, and confirmed the League of Legends
-game client opened successfully.
-```
-
-This was **only a technical test**.
-
-Gaming is not the purpose of Cognita.
-
-The test demonstrates that the core:
-
-```text
-Observe → Reason → Act → Verify
-```
-
-loop works.
-
----
-
-## 9. Planned Accessibility Demo
-
-For the final demonstration we want to use a task that represents the intended user group.
-
-### Typed example
-
-```text
-Open Notepad and type "My appointment is tomorrow at 10."
-```
-
-### Voice example
-
-The user says:
-
-```text
-"Open Notepad and type my appointment is tomorrow at 10."
-```
-
-Whisper converts this to text locally.
-
-Cognita then:
-
-1. receives the task;
-2. inspects the current screen;
-3. opens Notepad;
-4. enters the requested text;
-5. checks whether the task succeeded.
-
-Afterwards, Deepgram Flux TTS could say:
-
-```text
-"Done. Notepad is open and your message has been typed."
-```
-
----
-
-## 10. Edge Cases and Safety
-
-AI can make mistakes, so Cognita should not blindly assume that an action succeeded.
-
-| Problem | Cognita response |
+| Feature | Status |
 |---|---|
-| AI clicks the wrong location | Take another screenshot and reassess |
-| Application is still loading | Wait and check again |
-| AI becomes stuck | Stop after the maximum number of steps |
-| Command is unclear | Ask the user to clarify |
-| Whisper transcribes speech incorrectly | Confirm important commands before acting |
-| AI cannot understand the screen | Stop instead of randomly clicking |
-| Sensitive action is requested | Ask for user confirmation |
-| User needs to stop the agent | Use the PyAutoGUI emergency failsafe |
-| TTS fails | Keep the result available as normal text |
+| Python desktop application | ✅ Working |
+| PyQt6 graphical interface | ✅ Working |
+| Live LLM API calls | ✅ Working |
+| Typed natural-language tasks | ✅ Working |
+| Screenshot capture | ✅ Working |
+| Screenshot/vision input to the LLM | ✅ Working |
+| LLM tool/function calling | ✅ Working |
+| Mouse click | ✅ Working |
+| Click + type | ✅ Working |
+| Keyboard typing and hotkeys | ✅ Working |
+| Mouse scrolling | ✅ Working |
+| Re-observation after actions | ✅ Working |
+| Completion through `finish_task` | ✅ Working |
+| Visible logs and screenshot preview | ✅ Working |
+| Stop button | ✅ Working |
+| PyAutoGUI emergency fail-safe | ✅ Working |
+| User-data vault | ✅ Working |
+| Optional TTS after successful completion | ✅ Implemented |
+| Remote target-device bridge | 🧪 Implemented / optional |
+| Whisper speech-to-text | 🧪 Standalone experiment only |
+| Voice input integrated into the GUI | ❌ Not yet |
+| Per-action confirmation for sensitive actions | ❌ Not yet |
+
+### End-to-end core
+
+The working core can be demonstrated from input to output:
+
+```text
+Typed task
+   ↓
+Live LLM request with screenshot
+   ↓
+Tool call
+   ↓
+Real desktop action
+   ↓
+New screenshot
+   ↓
+Further tool calls if required
+   ↓
+finish_task
+   ↓
+Completion summary (+ optional TTS)
+```
+
+No manual code changes are required during this flow.
 
 ---
 
-## 11. Ethical Reflection
+## 9. User Safety and Edge Cases
 
-The biggest risk is that Cognita could **misunderstand the user's request or perform the wrong computer action**.
+Cognita interacts with a real computer, so a bad model decision can have real consequences.
 
-For someone who depends on the tool to operate their computer, this could cause actions they did not intend.
+The current prototype handles several failure situations explicitly:
 
-Examples include:
+| Situation | Current behaviour |
+|---|---|
+| No task entered | GUI blocks the run and asks for a task |
+| API not configured | GUI opens the API setup flow |
+| User starts an agent run | Cognita asks for confirmation before taking control |
+| Screen capture fails | Run stops and reports the error |
+| Tool execution fails | Error is logged and returned to the agent loop |
+| Interface is still loading | Agent can use the `wait` tool and inspect the screen again |
+| Agent needs lower/higher page content | Agent can use `mouse_scroll` |
+| User wants to stop | Stop button requests an abort |
+| Emergency stop | PyAutoGUI fail-safe can abort local mouse control |
+| Model returns no tool call | Run ends instead of inventing a local action |
 
-- sending the wrong message;
-- clicking the wrong option;
-- closing important work;
-- entering text in the wrong application.
-
-The current prototype limits this risk by:
-
-- taking screenshots after actions;
-- checking whether actions succeeded;
-- limiting the maximum number of steps;
-- using the PyAutoGUI emergency failsafe.
-
-For sensitive actions such as deleting files, sending messages or submitting forms, we plan to require explicit confirmation.
-
----
-
-### Privacy
-
-Cognita also has an important privacy risk.
-
-The computer-use AI receives screenshots through an external API.
-
-These screenshots could contain personal information.
-
-During the hackathon demo we therefore use non-sensitive information.
-
-A future version should capture only the necessary application or screen region.
-
-For voice input, we currently plan to use **Whisper locally**. This means the microphone recording can be transcribed on-device instead of being uploaded to an external speech-to-text provider.
-
-The transcription text can then be passed to Cognita.
+Cognita currently has **no hard maximum-step limit**. This is a limitation of the current version and should be reconsidered before the system is used outside controlled demonstrations.
 
 ---
 
-### Different accessibility needs
+## 10. Ethical Reflection
 
-Voice control is not accessible to everyone.
+The biggest risk is that Cognita can **misinterpret the user's intention or the screen and perform the wrong computer action**.
 
-Some users may have both motor and speech impairments.
+For the intended user, that risk can be especially important. A person who relies on Cognita because precise mouse or keyboard interaction is difficult may also find it harder to quickly correct an unintended click. On a real website, a wrong action could enter incorrect information, close work, send a message, submit a form or trigger another action the user did not intend.
 
-This is why Cognita supports **both text and voice input** rather than making voice mandatory.
+Several safeguards are already present in the prototype:
 
-We do not claim that Cognita solves digital accessibility for everyone.
+- Cognita asks for confirmation before an agent run takes control of the computer;
+- each action is followed by another screenshot so the model can reassess the result;
+- the interface shows the action log and current screenshot;
+- the user can press **STOP**;
+- local control uses the PyAutoGUI corner fail-safe;
+- our accessibility demo uses a **local practice form and synthetic data**, not a real government submission.
 
----
+A second major risk is **privacy**. Screenshots sent to a cloud LLM may contain personal information, and the optional user-data vault can contain highly sensitive identity or medical information. The repository therefore excludes `.env` and `data/*.json` from Git, but that does **not** prevent information from being sent to the selected cloud model during an agent run.
 
-## 12. Technology
+Before Cognita should be used with real sensitive data, we would add:
 
-### Currently used
+- explicit confirmation immediately before sensitive actions such as submitting a form, sending a message, deleting a file or making a payment;
+- screenshot cropping/redaction so irrelevant private information is not sent to the model;
+- stronger protection or encryption for locally stored user data;
+- a hard action/step limit to prevent runaway loops;
+- clearer permissions describing which applications or actions the agent may use;
+- testing with people from the intended user group instead of assuming that our interface is accessible to them.
 
-- **Python**
-- **OpenRouter API**
-- **Nex-N2.5-Pro**
-- **OpenAI-compatible Python client**
-- **PyAutoGUI**
-- **Pillow**
-- **python-dotenv**
-
-### Planned / currently being tested
-
-- **whisper.cpp**
-- **Whisper Large V3 Turbo Q5 (`large-v3-turbo-q5_0`)**
-- **Microphone input**
-- **Deepgram Flux TTS (`deepgram/flux-tts:free`)**
-- **Text-to-speech feedback**
+Cognita is therefore presented as an accessibility-focused prototype, **not** as a replacement for professional assistive technology and not as a safe autonomous agent for high-impact tasks.
 
 ---
 
-## 13. AI Model Overview
+## 11. Technology and Repository Structure
 
-| Component | Model | Runs where? | Status |
-|---|---|---|---|
-| Computer control | Nex-N2.5-Pro | OpenRouter API | ✅ Working |
-| Speech-to-text | Whisper Large V3 Turbo Q5 | Local / whisper.cpp | 🧪 Planned / testing |
-| Text-to-speech | Deepgram Flux TTS | OpenRouter API | 🧪 Planned / testing |
+### Main technologies
 
-The exact models may still change during development.
+- Python
+- PyQt6
+- live LLM APIs
+- OpenAI-compatible Python client
+- direct Anthropic Messages API support
+- PyAutoGUI
+- Pillow
+- Requests
+- QSettings
+- optional text-to-speech engines
 
-Any change will be based on practical testing such as:
+### Relevant files
 
-- speed;
-- accuracy;
-- stability;
-- hardware usage;
-- accessibility;
-- API availability.
+| File | Purpose |
+|---|---|
+| `src/main.py` | Application entry point |
+| `src/main_window.py` | Main GUI, start/stop controls and agent lifecycle |
+| `src/worker.py` | LLM loop, screenshots, API calls and tool-call handling |
+| `src/config.py` | Provider definitions, system prompt and tool schemas |
+| `src/actions.py` | Mouse, keyboard, scroll, wait and finish actions |
+| `src/device_bridge.py` | Local and optional remote device control |
+| `src/api_setup_dialog.py` | LLM provider/API setup and connection verification |
+| `src/vault_setup_dialog.py` | User-data form and synthetic example profile |
+| `src/tts.py` | Optional text-to-speech output |
+| `src/tts_setup_dialog.py` | TTS configuration and testing |
+| `src/whisper.py` | Experimental standalone Whisper transcription script |
+| `src/target_daemon.py` | Optional HTTP service for controlling a remote target device |
+| `demos/form1.html` | Local Wmo accessibility demo form |
+
+### Supported LLM providers in the code
+
+The current code contains provider configurations for:
+
+- Anthropic;
+- OpenAI;
+- Gemini;
+- OpenRouter;
+- DeepSeek;
+- a local OpenAI-compatible endpoint.
+
+For **Hackathon 3 assessment evidence**, use the direct **Anthropic Claude API** so the required AI tool is clear and demonstrable.
+
+---
+
+## 12. Optional Text-to-Speech
+
+After a successful `finish_task`, Cognita can speak the completion summary if TTS is enabled.
+
+The current code supports:
+
+- **Supertonic-3** locally;
+- **Deepgram Flux** through OpenRouter;
+- **OpenAI TTS**;
+- **ElevenLabs**.
+
+TTS is an additional feedback channel. It is **not required for the core computer-use loop** and should not be confused with speech input.
+
+---
+
+## 13. Experimental Speech-to-Text
+
+`src/whisper.py` currently contains an experiment using `pywhispercpp` and the `large-v3-turbo-q5_0` model to transcribe an `audio.wav` file.
+
+This is **not yet connected** to the Cognita GUI or agent flow. Therefore voice input is not used as evidence for the current working-prototype criterion.
+
+The future flow would be:
+
+```text
+Microphone
+   ↓
+Local Whisper
+   ↓
+Transcribed task
+   ↓
+Existing Cognita computer-use loop
+```
+
+Running Whisper locally could reduce the need to upload raw microphone audio to an external speech-to-text service, although the resulting task text and screenshots may still be sent to the selected LLM provider.
 
 ---
 
 ## 14. How to Run
 
-Clone the repository:
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/alex24106429/Cognita.git
 cd Cognita
 ```
 
-Install the dependencies:
+### 2. Create a virtual environment
+
+Windows:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\activate
+```
+
+macOS/Linux:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 3. Install the core dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Create a `.env` file:
-
-```env
-OPENAI_API_KEY=your_openrouter_api_key
-```
-
-> Never upload the real `.env` file or API key to GitHub.
-
-Run Cognita:
+### 4. Start Cognita
 
 ```bash
-python main.py
+python src/main.py
 ```
 
-The current version asks:
+### 5. Configure the LLM API
+
+On first launch, Cognita opens the API setup dialog.
+
+For the final hackathon assessment:
+
+1. select **Anthropic**;
+2. enter a valid Claude API key;
+3. verify the connection;
+4. select the Claude model used for the demo;
+5. save the configuration.
+
+The main agent credentials are configured through the application UI.
+
+### 6. Run a task
+
+Enter a task such as:
 
 ```text
-Enter the task for the computer agent:
+Open Notepad and type: Cognita accessibility demo.
 ```
 
-Example:
+or use the Wmo practice-form demo described above.
 
-```text
-Open Notepad and type hello.
+Cognita asks for confirmation before taking control of the mouse and keyboard.
+
+---
+
+## 15. Optional Remote Target Mode
+
+The code also contains a `RemoteDeviceBridge` and `src/target_daemon.py` so the Cognita UI can request screenshots and tool execution from another device over HTTP.
+
+This is an optional extension, not required for the hackathon demo.
+
+To use it, the target device also needs the FastAPI/ASGI dependencies used by `target_daemon.py`, for example:
+
+```bash
+pip install fastapi uvicorn pydantic
 ```
 
----
+Then start the target daemon, preferably with an authentication token:
 
-## 15. Current Limitations
+```bash
+python src/target_daemon.py --host 0.0.0.0 --port 8765 --token YOUR_TOKEN
+```
 
-Cognita is still a **proof of concept**.
-
-Current limitations include:
-
-- voice input is not integrated yet;
-- Whisper Q5 still needs to be tested on our hardware;
-- text-to-speech is not integrated yet;
-- the AI can select an incorrect screen position;
-- screenshots may contain private information;
-- sensitive actions do not yet require confirmation;
-- the main computer-use agent requires internet access;
-- TTS requires internet access;
-- the prototype has not yet been tested with real users from the target group.
-
-Local Whisper speech-to-text will not require an internet connection after the required model and software have been installed.
+> The current remote bridge uses plain HTTP. It should only be used on a trusted test network. Encryption and stronger authentication would be required before real-world deployment.
 
 ---
 
-## 16. Sources
+## 16. Current Limitations
 
-Research and technical documentation used for the project:
-
-- **World Health Organization (WHO)** — Disability and Health
-- **WebAIM** — The WebAIM Million 2026
-- **W3C Web Accessibility Initiative** — Speech Recognition and Physical Disabilities
-- **United Nations** — SDG 10: Reduced Inequalities
-- **whisper.cpp** — official model documentation
-- **OpenAI Whisper** — Large V3 Turbo
-- **OpenRouter** — Nex-N2.5-Pro and Deepgram Flux TTS
+- speech-to-text is not integrated into the main GUI;
+- the current user must still be able to enter a short typed task;
+- LLMs can choose an incorrect screen location or action;
+- there is currently no hard maximum-step limit;
+- there is no per-action confirmation system for sensitive actions yet;
+- screenshots sent to a cloud model may contain private information;
+- user-vault data can be sensitive and is not encrypted at rest;
+- the prototype has not yet been validated with real users from the intended target group;
+- remote target mode uses HTTP and is intended only for controlled testing;
+- behaviour can vary between LLM providers and models.
 
 ---
 
-## 17. Rubric Checklist
+## 17. Evidence Against the Hackathon Rubric
 
-| Criterion | Evidence |
+### Knockout criteria
+
+| Criterion | Evidence in Cognita |
 |---|---|
-| **K1 — AI Tool** | The live AI API is necessary for interpreting screenshots, understanding user requests and selecting computer actions |
-| **K2 — SDG Relevance** | Cognita addresses a digital interaction barrier for people with physical or motor impairments under SDG 10.2 |
-| **K3 — Scope** | The working prototype performs real end-to-end computer interaction rather than only demonstrating an API call |
-| **1. Problem Definition — 2 pts** | A specific accessibility problem is described and supported with WHO, WebAIM and W3C evidence |
-| **2. User Group — 2 pts** | Users with motor impairments, their needs and users outside the current scope are described |
-| **3. Solution Description — 2 pts** | The full input → AI → computer action → verification flow is documented |
-| **4. Problem–Solution Fit — 1 pt** | Cognita reduces the precise mouse/keyboard interaction that is difficult for the intended user |
-| **5. Working Prototype — 1 pt** | The current text-controlled prototype already works end-to-end |
-| **6. Ethical Reasoning — 2 pts** | Wrong actions, screenshot privacy and accessibility limitations are identified with concrete mitigations |
+| **K1 — AI tool** | The Python application makes live LLM API calls. The model receives screenshots and tool definitions and must choose the next computer action. For the final assessment we use the direct Anthropic Claude API. Without the LLM, the adaptive screen-understanding and action-selection loop would not work. |
+| **K2 — SDG relevance** | Cognita addresses a specific digital-interaction inequality for people with physical or motor impairments under SDG 10.2. It reduces the need for precise mouse navigation and repetitive typing. |
+| **K3 — Scope** | Cognita is not only an API test. It has a GUI, real mouse/keyboard/scroll control, repeated visual verification, a user-data vault, safety controls, optional TTS and a realistic multi-step Wmo practice-form scenario. |
+
+### Scored criteria — target: full score
+
+| Criterion | Evidence for the fully-met description |
+|---|---|
+| **1. Problem definition — 2/2** | The README defines what goes wrong, who experiences the barrier, the computer/form context in which it occurs, and supports significance with WHO, W3C and WebAIM evidence. |
+| **2. User group — 2/2** | The current target group is narrowly defined as people with motor impairments who can give a short typed instruction but struggle with precise or repetitive desktop input. Conditions of use and excluded users are stated explicitly. |
+| **3. Solution description — 2/2** | The README documents the input → screenshot → live LLM API → tool call → desktop action → new screenshot → verification → output flow, and maps the important source files. |
+| **4. Problem–solution fit — 1/1** | The solution directly transfers repetitive physical interaction from the user to an adaptive agent. The README also explains why fixed coordinate macros do not provide the same adaptability. |
+| **5. Working prototype — 1/1** | The typed-input core works end to end: task input, live API reasoning, screenshot analysis, real tool execution, repeated verification and `finish_task` completion. Experimental voice input is not presented as working evidence. |
+| **6. Ethical reasoning — 2/2** | The reflection identifies project-specific risks, explains consequences for motor-impaired users, documents safeguards already implemented, and lists concrete next mitigations for sensitive actions and privacy. |
 
 ---
 
-## 18. Next Steps
+## 18. Sources
 
-- [ ] Download and test Whisper Large V3 Turbo Q5
-- [ ] Benchmark voice transcription speed
-- [ ] Test Dutch and English voice commands
-- [ ] Add microphone recording
-- [ ] Connect Whisper transcription to the existing Cognita agent
-- [ ] Add Deepgram Flux TTS
-- [ ] Speak the final `finish_task` result through TTS
-- [ ] Add confirmation before sensitive actions
-- [ ] Create the final accessibility-focused demo
-- [ ] Record the demo
-- [ ] Test edge cases
-- [ ] Add final team contributions
+1. **World Health Organization — Disability and Health**  
+   https://www.who.int/news-room/fact-sheets/detail/disability-and-health
+
+2. **W3C Web Accessibility Initiative — Physical disabilities and barriers**  
+   https://www.w3.org/WAI/people-use-web/abilities-barriers/physical/
+
+3. **W3C Web Accessibility Initiative — Input: typing, writing and clicking**  
+   https://www.w3.org/WAI/people-use-web/tools-techniques/input/
+
+4. **WebAIM — The WebAIM Million 2026**  
+   https://webaim.org/projects/million/
+
+5. **United Nations — Sustainable Development Goal 10**  
+   https://sdgs.un.org/goals/goal10
 
 ---
 
-## Proof of Concept Status
+## 19. Before Final Submission
 
-The current prototype proves that the core computer-use system works:
+Before submitting the repository, we still need to make sure that what is documented is also demonstrated:
 
-```text
-Natural-language task
-        ↓
-AI screen understanding
-        ↓
-Computer actions
-        ↓
-Verification
-        ↓
-Task completion
-```
+- [ ] run the final demo with the direct Anthropic Claude API;
+- [ ] record a short screen capture of the working input → action → output flow;
+- [ ] include or link that recording in the GitHub submission;
+- [ ] use the Wmo practice form rather than a gaming example as the main accessibility demo;
+- [ ] use only synthetic/non-sensitive data in the recording;
+- [ ] stop before any real high-impact submission;
+- [ ] make sure both team members can explain the observe → reason → act → verify loop and the ethical risks.
 
-The next proof-of-concept stage adds:
-
-```text
-              Typed input
-                   │
-                   ├──────→ Cognita
-                   │
-Voice → Whisper ───┘
-                       ↓
-                 Computer task
-                       ↓
-                 Task completed
-                       ↓
-                     TTS
-```
-
-The final implementation may still change based on testing.
-
-Our current planned AI stack is therefore:
-
-```text
-VOICE INPUT
-Whisper Large V3 Turbo Q5
-Local through whisper.cpp
-
-          ↓
-
-COMPUTER AGENT
-Nex-N2.5-Pro
-through OpenRouter
-
-          ↓
-
-VOICE OUTPUT
-Deepgram Flux TTS
-through OpenRouter
-```
