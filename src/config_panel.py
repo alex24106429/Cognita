@@ -154,20 +154,42 @@ class ConfigPanel(QGroupBox):
             self.hide_cb.setChecked(False)
 
     def _populate_microphones(self):
-        """Populate the microphone combo box with available input devices."""
+        """Populate the microphone combo box with available input devices.
+
+        1. Always keeps "System Default" as the first option (device data None).
+        2. On Windows, targets the WASAPI host API to eliminate duplicate entries
+           from MME, DirectSound, WDM-KS, etc.
+        3. Falls back to generic input device enumeration if WASAPI is not available.
+        """
         self.mic_combo.blockSignals(True)
         self.mic_combo.clear()
+
+        # Always add "System Default" as the first option
+        self.mic_combo.addItem("System Default", None)
+
         try:
             devices = sd.query_devices()
-            default_input = sd.default.device[0]
+            hostapis = sd.query_hostapis()
+
+            # Find Windows WASAPI host API index if present
+            wasapi_idx = None
+            for idx, h_api in enumerate(hostapis):
+                if h_api.get("name") == "Windows WASAPI":
+                    wasapi_idx = idx
+                    break
+
             for i, dev in enumerate(devices):
-                if dev["max_input_channels"] > 0:
-                    self.mic_combo.addItem(dev["name"], i)
-                    if i == default_input:
-                        self.mic_combo.setCurrentIndex(
-                            self.mic_combo.count() - 1)
+                if dev["max_input_channels"] <= 0:
+                    continue
+
+                # If WASAPI is present, filter for WASAPI host API devices only
+                if wasapi_idx is not None and dev.get("hostapi") != wasapi_idx:
+                    continue
+
+                self.mic_combo.addItem(dev["name"], i)
         except Exception:
-            self.mic_combo.addItem("Default (system)", None)
+            pass  # "System Default" remains option
+
         self.mic_combo.blockSignals(False)
 
     def get_selected_microphone(self):
@@ -206,13 +228,15 @@ class ConfigPanel(QGroupBox):
         self.refresh_tts_info()
         self.refresh_vault_info()
 
-        # Load saved microphone selection
+        # Load saved microphone selection (fall back to System Default)
         saved_mic = self.settings.value("mic_device", type=int)
+        selected = 0  # "System Default"
         if saved_mic is not None and saved_mic >= 0:
             for i in range(self.mic_combo.count()):
                 if self.mic_combo.itemData(i) == saved_mic:
-                    self.mic_combo.setCurrentIndex(i)
+                    selected = i
                     break
+        self.mic_combo.setCurrentIndex(selected)
 
     def refresh_api_info(self):
         s = self.settings
@@ -269,7 +293,8 @@ class ConfigPanel(QGroupBox):
         s.setValue("target_mode", self.target_mode_combo.currentIndex())
         s.setValue("remote_host", self.remote_host_edit.text().strip())
         s.setValue("remote_token", self.remote_token_edit.text().strip())
-        s.setValue("mic_device", self.get_selected_microphone() or -1)
+        device_id = self.get_selected_microphone()
+        s.setValue("mic_device", -1 if device_id is None else device_id)
 
     def set_running(self, running: bool):
         for w in (self.cfg_btn, self.tts_btn, self.vault_btn, self.pause_spin,
