@@ -15,6 +15,7 @@ from tts_setup_dialog import TtsSetupDialog
 from vault_setup_dialog import VaultSetupDialog
 from tts import speak
 from worker import AgentWorker
+from whisper import VoiceWorker
 from device_bridge import LocalDeviceBridge, RemoteDeviceBridge
 
 
@@ -24,6 +25,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Cognita")
         self.resize(1180, 760)
         self.thread, self.worker = None, None
+        self.voice_thread, self.voice_worker = None, None
 
         self._build_ui()
         self.setStyleSheet(APP_STYLESHEET)
@@ -52,6 +54,12 @@ class MainWindow(QMainWindow):
         self.task_edit.returnPressed.connect(self.start_agent)
         self.task_edit.setMinimumHeight(34)
 
+        self.voice_btn = QPushButton("🎤", objectName="voiceBtn")
+        self.voice_btn.setMinimumHeight(34)
+        self.voice_btn.setToolTip(
+            "Voice input — click to start recording, click again to stop")
+        self.voice_btn.clicked.connect(self.toggle_voice_input)
+
         self.start_btn = QPushButton("▶  Run Agent", objectName="startBtn")
         self.start_btn.setMinimumHeight(34)
         self.start_btn.clicked.connect(self.start_agent)
@@ -62,6 +70,7 @@ class MainWindow(QMainWindow):
         self.stop_btn.clicked.connect(self.stop_agent)
 
         tl.addWidget(self.task_edit, 1)
+        tl.addWidget(self.voice_btn)
         tl.addWidget(self.start_btn)
         tl.addWidget(self.stop_btn)
         root.addWidget(task_box)
@@ -204,6 +213,63 @@ class MainWindow(QMainWindow):
             self.stop_btn.setEnabled(False)
             self.statusBar().showMessage("Stopping…")
 
+    def toggle_voice_input(self):
+        if self.voice_thread is None:
+            self._start_voice_recording()
+        else:
+            self._stop_voice_recording()
+
+    def _start_voice_recording(self):
+        device_id = self.cfg_panel.get_selected_microphone()
+        self.voice_worker = VoiceWorker(device_id=device_id)
+        self.voice_thread = QThread(self)
+        self.voice_worker.moveToThread(self.voice_thread)
+
+        self.voice_thread.started.connect(self.voice_worker.start)
+        self.voice_worker.status.connect(self.on_voice_status)
+        self.voice_worker.transcription_ready.connect(
+            self.on_voice_transcription)
+        self.voice_worker.error.connect(self.on_voice_error)
+        self.voice_worker.finished.connect(self.on_voice_finished)
+
+        self.voice_btn.setText("⏹")
+        self.voice_btn.setToolTip("Stop recording")
+        self.voice_btn.setEnabled(True)
+
+        self.voice_thread.start()
+
+    def _stop_voice_recording(self):
+        if self.voice_worker:
+            self.voice_worker.request_stop()
+        self.voice_btn.setText("⏳")
+        self.voice_btn.setToolTip("Transcribing…")
+        self.voice_btn.setEnabled(False)
+
+    def on_voice_status(self, msg: str):
+        self.statusBar().showMessage(msg)
+
+    def on_voice_transcription(self, text: str):
+        self.task_edit.setText(text)
+        self.statusBar().showMessage(
+            "Transcription ready — review and press Run Agent.")
+
+    def on_voice_error(self, msg: str):
+        self.log_panel.append_log("error", f"Voice input error: {msg}")
+        self.statusBar().showMessage(f"Voice input error: {msg}")
+
+    def on_voice_finished(self):
+        if self.voice_thread:
+            self.voice_thread.quit()
+            self.voice_thread.wait(3000)
+            self.voice_thread.deleteLater()
+        if self.voice_worker:
+            self.voice_worker.deleteLater()
+        self.voice_thread, self.voice_worker = None, None
+        self.voice_btn.setText("🎤")
+        self.voice_btn.setToolTip(
+            "Voice input — click to start recording, click again to stop")
+        self.voice_btn.setEnabled(True)
+
     @pyqtSlot(bool, str)
     def on_finished(self, success: bool, summary: str):
         if success:
@@ -232,6 +298,7 @@ class MainWindow(QMainWindow):
         self.start_btn.setEnabled(not running)
         self.stop_btn.setEnabled(running)
         self.task_edit.setEnabled(not running)
+        self.voice_btn.setEnabled(not running)
         self.cfg_panel.set_running(running)
 
     def closeEvent(self, e):

@@ -1,4 +1,5 @@
 import os
+import sounddevice as sd
 from PyQt6.QtCore import pyqtSignal, QSettings, Qt
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
@@ -134,6 +135,15 @@ class ConfigPanel(QGroupBox):
         opts.addStretch()
         layout.addLayout(opts, 3, 2, 1, 4)
 
+        # Row 4: Microphone selection
+        layout.addWidget(QLabel("Microphone:"), 4, 0)
+        self.mic_combo = QComboBox()
+        self.mic_combo.setToolTip(
+            "Select the microphone device for voice input")
+        self._populate_microphones()
+        self.mic_combo.currentIndexChanged.connect(self._on_mic_changed)
+        layout.addWidget(self.mic_combo, 4, 1, 1, 3)
+
         self._on_target_mode_changed(self.target_mode_combo.currentIndex())
 
     def _on_target_mode_changed(self, index: int):
@@ -142,6 +152,36 @@ class ConfigPanel(QGroupBox):
         self.remote_token_edit.setEnabled(is_remote)
         if is_remote:
             self.hide_cb.setChecked(False)
+
+    def _populate_microphones(self):
+        """Populate the microphone combo box with available input devices."""
+        self.mic_combo.blockSignals(True)
+        self.mic_combo.clear()
+        try:
+            devices = sd.query_devices()
+            default_input = sd.default.device[0]
+            for i, dev in enumerate(devices):
+                if dev["max_input_channels"] > 0:
+                    self.mic_combo.addItem(dev["name"], i)
+                    if i == default_input:
+                        self.mic_combo.setCurrentIndex(
+                            self.mic_combo.count() - 1)
+        except Exception:
+            self.mic_combo.addItem("Default (system)", None)
+        self.mic_combo.blockSignals(False)
+
+    def get_selected_microphone(self):
+        """Return the selected microphone device ID, or None for default."""
+        idx = self.mic_combo.currentIndex()
+        if idx >= 0:
+            return self.mic_combo.itemData(idx)
+        return None
+
+    def _on_mic_changed(self, index: int):
+        """Save the selected microphone to settings."""
+        device_id = self.mic_combo.itemData(index) if index >= 0 else None
+        self.settings.setValue(
+            "mic_device", device_id if device_id is not None else -1)
 
     def load_settings(self):
         s = self.settings
@@ -165,6 +205,14 @@ class ConfigPanel(QGroupBox):
         self.refresh_api_info()
         self.refresh_tts_info()
         self.refresh_vault_info()
+
+        # Load saved microphone selection
+        saved_mic = self.settings.value("mic_device", type=int)
+        if saved_mic is not None and saved_mic >= 0:
+            for i in range(self.mic_combo.count()):
+                if self.mic_combo.itemData(i) == saved_mic:
+                    self.mic_combo.setCurrentIndex(i)
+                    break
 
     def refresh_api_info(self):
         s = self.settings
@@ -221,9 +269,11 @@ class ConfigPanel(QGroupBox):
         s.setValue("target_mode", self.target_mode_combo.currentIndex())
         s.setValue("remote_host", self.remote_host_edit.text().strip())
         s.setValue("remote_token", self.remote_token_edit.text().strip())
+        s.setValue("mic_device", self.get_selected_microphone() or -1)
 
     def set_running(self, running: bool):
         for w in (self.cfg_btn, self.tts_btn, self.vault_btn, self.pause_spin,
                   self.settle_spin, self.reasoning_combo, self.hide_cb,
-                  self.target_mode_combo, self.remote_host_edit, self.remote_token_edit):
+                  self.target_mode_combo, self.remote_host_edit, self.remote_token_edit,
+                  self.mic_combo):
             w.setEnabled(not running)

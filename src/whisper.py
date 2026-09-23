@@ -2,16 +2,18 @@
 Local speech-to-text using pywhispercpp and the Whisper large-v3-turbo-q5_0 model.
 
 This module is import-safe: the Whisper model is NOT loaded at import time.
-It is only loaded when transcribe_audio() or record_and_transcribe() is called.
+It is only loaded when transcribe_audio() or VoiceWorker.start() is called.
 """
 
 import os
 import wave
 import tempfile
+import threading
 import psutil
 import numpy as np
 import sounddevice as sd
 from pywhispercpp.model import Model
+from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
 
 def _get_n_threads() -> int:
@@ -107,3 +109,88 @@ def record_and_transcribe(
         os.unlink(wav_path)
 
     return text
+
+
+class VoiceWorker(QObject):
+    """
+    QObject that records from the microphone and transcribes via local Whisper.
+    Designed to run inside a QThread.
+
+    The UI thread calls request_stop() directly (not via a queued signal)
+    because the worker thread is blocked on threading.Event.wait() and
+    cannot process queued slots while blocked.
+    """
+
+    status = pyqtSignal(str)
+    transcription_ready = pyqtSignal(str)
+    error = pyqtSignal(str)
+    finished = pyqtSignal()
+
+    def __init__(self, device_id=None, sample_rate: int = 16000,
+                 model_name: str = "large-v3-turbo-q5_0", language: str = "en"):
+        super().__init__()
+        self.device_id = device_id
+        self.sample_rate = sample_rate
+        self.model_name = model_name
+        self.language = language
+        self._stop_event = threading.Event()
+        self._audio_buffer: list[np.ndarray] = []
+
+    @pyqtSlot()
+    def start(self):
+        """Entry point for the QThread. Records, then transcribes."""
+        try:
+            self._stop_event.clear()
+            self._audio_buffer = []
+            self.status.emit("Recording...")
+
+            with sd.InputStream(
+                samplerate=self.sample_rate,
+                channels=1,
+                dtype="int16",
+                device=self.device_id,
+                callback=self._audio_callback,
+            ):
+                # Block until the UI thread calls request_stop()
+                self._stop_event.wait()
+
+            self.status.emit("Transcribing...")
+
+            if not self._audio_buffer:
+                self.error.emit("No audio was recorded.")
+                return
+
+            audio = np.concatenate(self._audio_buffer)
+
+            if len(audio) == 0:
+                self.error.emit("No audio was recorded.")
+                return
+
+            # Save to temp WAV
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+                wav_path = tmp.name
+            save_wav(audio, self.sample_rate, wav_path)
+
+            try:
+                text = transcribe_audio(
+                    wav_path, self.model_name, self.language)
+            finally:
+                os.unlink(wav_path)
+
+            if not text.strip():
+                self.error.emit("Transcription was empty.")
+                return
+
+            self.transcription_ready.emit(text)
+        except Exception as e:
+            self.error.emit(str(e))
+        finally:
+            self.finished.emit()
+
+    def _audio_callback(self, indata, frames, time, status):
+        """sounddevice callback — runs in sounddevice's own thread."""
+        self._audio_buffer.append(indata.copy())
+
+    def request_stop(self):
+        """Called from the UI thread. ONLY sets the event."""
+        self._stop_event.set()
