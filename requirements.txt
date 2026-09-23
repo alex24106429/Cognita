@@ -7,3 +7,4 @@ pywhispercpp
 requests
 supertonic
 sounddevice
+psutil
