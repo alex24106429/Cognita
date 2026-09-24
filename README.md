@@ -20,6 +20,30 @@ Users can give Cognita a task by **typing or speaking**. Cognita can then observ
 | **Speech-to-text** | Local Whisper Large V3 Turbo Q5 |
 | **Text-to-speech API** | Deepgram Flux TTS through OpenRouter |
 
+## Demo Video
+
+The completed Cognita prototype is demonstrated end-to-end in the video below:
+
+**[▶ Watch the Cognita Demo on YouTube](https://youtu.be/4r_Zh2HOO7Y)**
+
+The demo shows the complete workflow: voice input, local Whisper transcription, user verification, live AI reasoning, computer control, automatic form filling and task completion.
+
+---
+
+## Team Contributions
+
+Cognita was developed collaboratively by **Arbër and Alex**.
+
+| Team member | Main contributions |
+|---|---|
+| **Alex** | Developed the original Cognita concept and implemented most of the core application. His work included the main desktop interface, the agent architecture, screenshot-based screen understanding, computer-control functionality, tool execution, API integration, user-data functionality, safety controls, TTS support and most of the original end-to-end workflow. He was responsible for the majority of the application's initial development and core technical implementation. |
+| **Arbër** | Created and structured the final README and project documentation, and implemented the complete voice-input functionality, including microphone support, local Whisper speech-to-text, GUI integration, microphone selection and the later voice-related fixes and improvements.|
+| **Arbër & Alex** | Worked together on testing, finalising the product and creating the PowerPoint presentation for the hackathon. |
+
+Although responsibilities were divided, both team members contributed to testing and finalising the completed Cognita prototype.
+
+---
+
 > **Core idea:** the user describes *what* they want to achieve. Cognita uses AI to determine *how* to interact with the current graphical interface.
 
 > **Visual evidence in this README:** the screenshots below are not decorative. They are placed next to the relevant sections to show the working product, the live AI/API integration, the intended user flow, the accessibility scenario, safety measures and the final end-to-end result. This helps the GitHub submission stand on its own without extra explanation.
@@ -1269,7 +1293,7 @@ Before handing in the GitHub link, the portfolio should visibly contain:
 - [x] README with setup instructions
 - [x] Realistic accessibility demo scenario
 - [x] Screenshots inserted at the marked locations in this README
-- [ ] Demo screen recording linked in this README
+- [x] Demo screen recording linked in this README
 
 ---
 
