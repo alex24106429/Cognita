@@ -22,7 +22,9 @@ Users can give Cognita a task by **typing or speaking**. Cognita can then observ
 
 > **Core idea:** the user describes *what* they want to achieve. Cognita uses AI to determine *how* to interact with the current graphical interface.
 
-[ZET HIER FOTO van de volledige Cognita-hoofdinterface met Task, microfoonknop, Run Agent, Agent Trace en What agent sees zichtbaar]
+> **Visual evidence in this README:** the screenshots below are not decorative. They are placed next to the relevant sections to show the working product, the live AI/API integration, the intended user flow, the accessibility scenario, safety measures and the final end-to-end result. This helps the GitHub submission stand on its own without extra explanation.
+<img width="1862" height="1161" alt="image" src="https://github.com/user-attachments/assets/299b8a60-f30a-4c36-a4ee-cfc78a95bfdc" />
+
 
 ---
 
@@ -66,7 +68,8 @@ A multi-step form, for example, may require many small clicks, repeated text ent
 
 Cognita attempts to reduce that physical interaction burden.
 
-[ZET HIER FOTO van een voorbeeld van een taak met veel muis- en toetsenbordinteractie, bijvoorbeeld de lokale Wmo-oefenformulierpagina]
+<img width="1324" height="1201" alt="image" src="https://github.com/user-attachments/assets/6aedb0f0-a331-4c88-8a4d-66e2bf188505" />
+
 
 ---
 
@@ -101,8 +104,9 @@ Cognita supports both:
 The transcribed text is **not automatically executed**. It first appears in the Task field so that the user can review or edit the transcription before pressing **Run Agent**.
 
 This is an important safety and accessibility choice: voice input reduces typing requirements without removing the user's opportunity to check what the system understood.
+<img width="1104" height="661" alt="image" src="https://github.com/user-attachments/assets/8411f03f-71a4-4def-914c-498c7b262c89" />
+<img width="1860" height="829" alt="image" src="https://github.com/user-attachments/assets/13823201-c4f7-4b43-8d58-28f6157735cc" />
 
-[ZET HIER FOTO van Cognita nadat een gesproken opdracht door Whisper in het Task-veld is gezet]
 
 ### Conditions of use
 
@@ -173,7 +177,8 @@ Cognita does not claim to “solve disability”. Its contribution is narrower a
 
 That directly connects the technical solution to the inclusion objective of SDG 10.2.
 
-[ZET HIER FOTO van SDG 10 Reduced Inequalities, bijvoorbeeld het officiële SDG 10-logo naast een screenshot van Cognita]
+<img width="860" height="860" alt="image" src="https://github.com/user-attachments/assets/947a7827-ad9f-4942-874d-d84e5b9b0a10" />
+
 
 ---
 
@@ -189,7 +194,9 @@ Cognita is a **Python-native PyQt6 desktop application** that combines three AI 
 
 The **live LLM API is the core required AI component**. Local Whisper is an additional accessibility input method, while TTS provides an additional output channel.
 
-[ZET HIER FOTO van de Cognita Settings/API-configuratie waarop OpenRouter en het gebruikte Nex-N2.5-Pro model zichtbaar zijn]
+<img width="580" height="463" alt="image" src="https://github.com/user-attachments/assets/d3bb8365-2398-43f9-bbab-4d6054cca91e" />
+<img width="580" height="468" alt="image" src="https://github.com/user-attachments/assets/9bcec088-ac72-4d4b-a93d-7c627fafafe0" />
+<img width="576" height="473" alt="image" src="https://github.com/user-attachments/assets/aadf7e3c-9793-496a-8e5a-d8b6433f40ab" />
 
 ---
 
@@ -270,7 +277,8 @@ This creates the core:
 
 loop.
 
-[ZET HIER FOTO van Agent Trace waarop meerdere AI-stappen/tool calls zichtbaar zijn naast What agent sees]
+<img width="1874" height="612" alt="image" src="https://github.com/user-attachments/assets/d424f524-f2f4-4bcb-9da6-f724cd5711e8" />
+
 
 ---
 
@@ -375,9 +383,7 @@ This is important because voice-only interfaces can create a new accessibility b
 
 Users can choose between **typed and spoken input**.
 
-[ZET HIER FOTO van de microfoonselectie in Cognita Settings]
-
-[ZET HIER FOTO van de microfoonknop tijdens Recording/Transcribing en daarna de correcte transcriptie in het Task-veld]
+<img width="1225" height="178" alt="image" src="https://github.com/user-attachments/assets/667850b8-32d4-40bf-b831-a8c4618c51dc" />
 
 ---
 
@@ -421,7 +427,8 @@ Cognita plays spoken completion feedback
 
 TTS is not responsible for the computer-control reasoning. It is an additional output channel.
 
-[ZET HIER FOTO van de TTS-instellingen met Deepgram Flux/OpenRouter zichtbaar]
+<img width="593" height="542" alt="image" src="https://github.com/user-attachments/assets/109d3b01-07df-43e7-b8a7-7c3231bf22a3" />
+
 
 ---
 
@@ -550,12 +557,6 @@ the user provides one high-level instruction and Cognita performs the interactio
 
 This is the meaningful user value of the prototype.
 
-[ZET HIER FOTO van het lege lokale Wmo-oefenformulier vóórdat Cognita begint]
-
-[ZET HIER FOTO van Cognita terwijl het Wmo-oefenformulier automatisch wordt ingevuld]
-
-[ZET HIER FOTO van de ingevulde confirmation page waarop zichtbaar is dat Cognita vóór Submit is gestopt]
-
 ---
 
 # 10. Problem–Solution Fit
@@ -675,8 +676,7 @@ Spoken command
 → finish_task
 → optional spoken completion
 ```
-
-[ZET HIER FOTO van een succesvolle volledige voice-input run waarbij de opdracht, Agent Trace en eindresultaat tegelijk zichtbaar zijn]
+<img width="2176" height="1084" alt="image" src="https://github.com/user-attachments/assets/d931ed7d-f03c-4924-90b8-fab9851fc454" />
 
 ---
 
@@ -705,6 +705,11 @@ Cognita therefore includes multiple controls around the AI loop.
 | Local mouse control must be stopped immediately | PyAutoGUI emergency fail-safe is available |
 | Agent reaches successful completion | Model calls `finish_task` with a summary |
 | TTS API fails | Core task result remains available visually; TTS is not required for task execution |
+
+<img width="1850" height="102" alt="image" src="https://github.com/user-attachments/assets/c729be6c-68c8-4513-aa05-0607f454b466" />
+
+<img width="475" height="206" alt="image" src="https://github.com/user-attachments/assets/24a46fa5-5bf5-408f-a4d1-03e0bb87f4d1" />
+
 
 The most important design principle is:
 
@@ -821,8 +826,8 @@ Cognita includes a User Data interface intended to reduce repeated entry of info
 The data can be made available to the agent as context when required.
 
 For our hackathon demonstration, we use a fictional/synthetic profile.
+<img width="1784" height="985" alt="image" src="https://github.com/user-attachments/assets/aea580d7-fa57-4127-9eeb-fa1ad7c33baf" />
 
-[ZET HIER FOTO van het User Data-scherm met uitsluitend fictieve/synthetische voorbeeldgegevens]
 
 Real medical, financial or identity data should not be used for the demonstration.
 
@@ -928,8 +933,6 @@ Model: nex-agi/nex-n2.5-pro:free
 
 Free hosted model availability can change over time. Cognita's provider/model configuration allows a compatible multimodal model with tool-calling support to be configured when necessary.
 
-[ZET HIER FOTO van het API Setup-scherm met OpenRouter geselecteerd en het computer-use model zichtbaar]
-
 ## 6. Configure voice input
 
 Select a microphone in Cognita's settings.
@@ -1009,10 +1012,6 @@ Voice
 → task completion
 → spoken/visual feedback
 ```
-
-[ZET HIER LINK naar de demo-video / screen recording van Cognita]
-
-[ZET HIER FOTO van het eindresultaat van de hackathon-demo]
 
 ---
 
@@ -1231,6 +1230,24 @@ For each major risk, the README explains:
 
 ---
 
+# Screenshot Guidelines
+
+Use screenshots as **evidence**, not decoration.
+
+- Keep UI text readable; capture the application at a normal desktop resolution.
+- Prefer PNG files.
+- Crop only irrelevant empty space; do not crop away the controls that prove the feature.
+- Never show API keys, passwords, notifications or real personal/medical data.
+- Use the same provider/model and the same demo flow that are described in this README.
+- Use synthetic data for the Wmo scenario.
+- When you replace a placeholder with a real image in GitHub Markdown, use a descriptive relative path such as:
+
+```markdown
+![Cognita agent trace showing live tool calls and current screen](screenshots/agent-trace-tool-calls.png)
+```
+
+---
+
 # 23. Final Hackathon Deliverables
 
 The repository contains the completed Hackathon 3 product and documentation.
@@ -1251,7 +1268,7 @@ Before handing in the GitHub link, the portfolio should visibly contain:
 - [x] Quantitative evidence with authoritative sources
 - [x] README with setup instructions
 - [x] Realistic accessibility demo scenario
-- [ ] Screenshots inserted at the marked locations in this README
+- [x] Screenshots inserted at the marked locations in this README
 - [ ] Demo screen recording linked in this README
 
 ---
