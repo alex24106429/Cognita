@@ -54,6 +54,27 @@ def save_wav(audio: np.ndarray, sample_rate: int, path: str) -> str:
     return path
 
 
+def resample_audio(audio: np.ndarray, orig_sr: int, target_sr: int) -> np.ndarray:
+    """
+    Resample a 1-D int16 mono audio array from *orig_sr* to *target_sr*
+    using linear interpolation.
+
+    Uses only NumPy (no extra dependencies), which is sufficient for
+    speech-to-text preprocessing.
+    """
+    if orig_sr == target_sr:
+        return audio
+    num_samples = int(len(audio) * target_sr / orig_sr)
+    if num_samples == 0:
+        return np.array([], dtype=np.int16)
+    resampled = np.interp(
+        np.linspace(0, len(audio) - 1, num_samples),
+        np.arange(len(audio)),
+        audio.astype(np.float64),
+    )
+    return resampled.astype(np.int16)
+
+
 def transcribe_audio(
     wav_path: str,
     model_name: str = "large-v3-turbo-q5_0",
@@ -144,15 +165,42 @@ class VoiceWorker(QObject):
             self._audio_buffer = []
             self.status.emit("Recording...")
 
-            with sd.InputStream(
-                samplerate=self.sample_rate,
-                channels=1,
-                dtype="int16",
-                device=self.device_id,
-                callback=self._audio_callback,
-            ):
-                # Block until the UI thread calls request_stop()
-                self._stop_event.wait()
+            # Determine the native sample rate for the selected device.
+            # System Default (device_id is None) works with 16 kHz directly.
+            # Explicit WASAPI devices may use a different native rate (e.g.
+            # 48 kHz), so we query the device's default sample rate and
+            # resample to 16 kHz for Whisper afterwards.
+            if self.device_id is not None:
+                try:
+                    dev_info = sd.query_devices(self.device_id)
+                    device_sample_rate = int(dev_info["default_samplerate"])
+                except Exception as e:
+                    self.error.emit(
+                        f"Could not query sample rate for microphone "
+                        f"device {self.device_id}: {e}"
+                    )
+                    return
+            else:
+                device_sample_rate = self.sample_rate
+
+            try:
+                with sd.InputStream(
+                    samplerate=device_sample_rate,
+                    channels=1,
+                    dtype="int16",
+                    device=self.device_id,
+                    callback=self._audio_callback,
+                ):
+                    # Block until the UI thread calls request_stop()
+                    self._stop_event.wait()
+            except Exception as e:
+                dev_label = ("System Default" if self.device_id is None
+                             else f"device {self.device_id}")
+                self.error.emit(
+                    f"Error opening InputStream for {dev_label} "
+                    f"at {device_sample_rate} Hz: {e}"
+                )
+                return
 
             self.status.emit("Transcribing...")
 
@@ -165,6 +213,14 @@ class VoiceWorker(QObject):
             if len(audio) == 0:
                 self.error.emit("No audio was recorded.")
                 return
+
+            # Ensure mono 1-D array
+            audio = audio.squeeze()
+
+            # Resample to Whisper's required 16 kHz if the device used a
+            # different native sample rate.
+            if device_sample_rate != self.sample_rate:
+                audio = resample_audio(audio, device_sample_rate, self.sample_rate)
 
             # Save to temp WAV
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
